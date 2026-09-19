@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "agx.screen-time",
-  "name": "Screen Time",
-  "version": "1.6.2",
-  "author": "agx",
-  "description": "Know where your time goes. Live per-app screen time in your bar with a donut breakdown, a 52-week trend, a yearly overview, and usage insights — terminal-aware, keyboard-first, fully local.",
+  "id": "mikwat.screen-limit",
+  "name": "Screen Limit",
+  "version": "1.0.0",
+  "author": "mikwat",
+  "description": "Decide when to stop. Set a daily screen time limit, watch it count down in your bar, and hear an alarm when it runs out — with a donut breakdown, a 52-week trend, a yearly overview, and usage insights. Terminal-aware, keyboard-first, fully local.",
   "kinds": [
     "service",
     "bar-widget"
@@ -15,8 +15,8 @@
     "barWidget": "qml/BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "Screen Time",
-    "description": "Daily screen time per app with usage insights",
+    "displayName": "Screen Limit",
+    "description": "Daily screen time limit with a bar countdown and alarm",
     "category": "Wellbeing",
     "allowMultiple": false,
     "defaultSection": "right"

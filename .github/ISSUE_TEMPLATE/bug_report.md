@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a bug in the Screen Time plugin
+about: Report a bug in the Screen Limit plugin
 title: ""
 labels: bug
 assignees: ""
@@ -27,4 +27,4 @@ If applicable, add screenshots of the panel or bar widget.
 - Terminal emulator:
 
 **Additional context**
-Any other context (logs, `~/.config/omarchy/screen-time/history.json` excerpts, etc.).
+Any other context (logs, `~/.config/omarchy/screen-limit/history.json` excerpts, etc.).

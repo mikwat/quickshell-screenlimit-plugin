@@ -194,7 +194,7 @@ TestCase {
     }
 
     function test_aboutRenders() {
-        var about = findText("Screen Time");
+        var about = findText("Screen Limit");
         verify(about !== null && about.height > 0 && ancestorsOccupy(about), "about card occupies");
     }
 }

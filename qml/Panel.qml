@@ -9,14 +9,14 @@ import "components"
 // Read-only mirror of the Service's live state.
 Panel {
     id: root
-    moduleName: "agx.screen-time"
+    moduleName: "mikwat.screen-limit"
 
     property var anchorItem: null
     property var hostWidget: null
     readonly property var barIdentity: hostWidget || root
 
     // Panel switching identifies us by the bar widget, not the panel.
-    readonly property var service: bar && bar.shell ? bar.shell.serviceFor("agx.screen-time") : null
+    readonly property var service: bar && bar.shell ? bar.shell.serviceFor("mikwat.screen-limit") : null
     readonly property bool serviceReady: service && service.ready === true
     readonly property var today: service ? service.today : null
     readonly property var days: service ? service.days : {}
@@ -36,7 +36,7 @@ Panel {
     readonly property bool hideRecordTrophy: root.prefs.hideRecordTrophy === true
     // Plugin version, mirrored from manifest.json (a test fails when
     // they drift apart); shown in the settings About section.
-    readonly property string pluginVersion: "1.6.2"
+    readonly property string pluginVersion: "1.0.0"
 
     // Week presets, up to 52 weeks back. App detail always covers the
     // visible window (see effectiveKeepDays below).

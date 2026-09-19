@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="preview.png" alt="Screen Time" width="100%"/>
+  <img src="preview.png" alt="Screen Limit" width="100%"/>
 </p>
 
-# Screen Time
+# Screen Limit
 
 Know where your time goes. A lightweight service tracks focused time per app,
 shows today's total in the bar, and breaks your history into a donut chart, a
@@ -45,7 +45,7 @@ local.
   under the hero total.
 - Keyboard-first: the panel opens, closes, scrolls and triggers every
   control from the keyboard — see [Keybinds & hints](#keybinds--hints)
-  below. Summon and control the panel via the `agx.screen-time` IPC
+  below. Summon and control the panel via the `mikwat.screen-limit` IPC
   target (`open`, `toggle`, `resetToday`, `resetAll`, `status`).
 - Private by design: one local JSON file; old days roll into a
   perpetual per-day archive, and only the app breakdown is ever forgotten.
@@ -70,9 +70,12 @@ list.
 ## Install
 
 ```bash
-omarchy plugin add https://github.com/ax1g/quickshell-screentime-plugin.git
-omarchy plugin enable agx.screen-time
+omarchy plugin add /path/to/quickshell-screenlimit-plugin
+omarchy plugin enable mikwat.screen-limit
 ```
+
+`omarchy plugin add` clones from anywhere git can reach, a local checkout
+included.
 
 Requires Omarchy and Hyprland. A Nerd Font provides the glyphs, and
 `python3` (preinstalled on Omarchy) powers terminal and Steam name
@@ -82,19 +85,19 @@ their own name (`foot`, `kitty`) instead of what runs inside them.
 ## Uninstall
 
 ```bash
-omarchy plugin disable agx.screen-time
-omarchy plugin remove agx.screen-time
+omarchy plugin disable mikwat.screen-limit
+omarchy plugin remove mikwat.screen-limit
 ```
 
 To also delete the history file:
 
 ```bash
-rm ~/.config/omarchy/screen-time/history.json
+rm ~/.config/omarchy/screen-limit/history.json
 ```
 
 ## Data
 
-Everything lives in one local file, `~/.config/omarchy/screen-time/history.json`:
+Everything lives in one local file, `~/.config/omarchy/screen-limit/history.json`:
 
 ```json
 {
@@ -131,7 +134,7 @@ The shell hot-reloads the plugin whenever a file changes, so a symlink into
 your checkout is all you need to iterate:
 
 ```bash
-ln -s "$PWD" ~/.config/omarchy/plugins/agx.screen-time
+ln -s "$PWD" ~/.config/omarchy/plugins/mikwat.screen-limit
 node --check js/Model.js && node --check js/State.js
 npx -y prettier@3.9.6 --no-semi --check js/ tests/
 node --test tests/model.test.js tests/state.test.js tests/service.test.js tests/panel.test.js

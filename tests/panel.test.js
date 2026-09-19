@@ -547,7 +547,7 @@ test("help section links out with icons and a marketplace like", () => {
   assert.match(menu, /"Report a bug"/)
   assert.match(menu, /"Share an idea"/)
   assert.match(menu, /"Contribute"/)
-  assert.match(menu, /"Please leave a like"/)
+  assert.match(menu, /"Like the original"/)
   assert.match(menu, /plugin\.html\?id=agx\.screen-time/)
   assert.match(menu, /Qt\.openUrlExternally\(modelData\.url\)/)
   assert.match(menu, /github\.com\/ax1g\/quickshell-screentime-plugin/)
@@ -610,15 +610,17 @@ test("about shows the manifest version", () => {
   assert.match(menu, /required property string pluginVersion/)
   assert.match(panel, /pluginVersion: root\.pluginVersion/)
   assert.doesNotMatch(menu, /text: "ABOUT"/)
-  assert.match(menu, /text: "Screen Time"/)
+  assert.match(menu, /text: "Screen Limit"/)
   assert.match(menu, /"v" \+ root\.pluginVersion/)
-  assert.match(menu, /Know where your time goes/)
+  assert.match(menu, /Decide when to stop/)
+  // The fork credits the project it came from.
+  assert.match(menu, /A fork of Screen Time by agx/)
 })
 
 test("settings header reads Settings with a content subtitle", () => {
   assert.match(panel, /text: "Settings"/)
   assert.match(panel, /Display, tracking, goals & data/)
-  assert.doesNotMatch(panel, /text: "Screen Time"/)
+  assert.doesNotMatch(panel, /text: "Screen Limit"/)
 })
 
 test("trophy needs two weeks of tracked data", () => {

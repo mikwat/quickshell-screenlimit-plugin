@@ -1,4 +1,4 @@
-# Contributing to Screen Time
+# Contributing to Screen Limit
 
 Thanks for your interest in contributing! This document explains how to get
 started.
@@ -7,12 +7,12 @@ started.
 
 1. Clone the repo:
    ```
-   git clone https://github.com/ax1g/quickshell-screentime-plugin.git
+   git clone https://github.com/ax1g/quickshell-screenlimit-plugin.git
    ```
 2. Install [Omarchy](https://github.com/ax1g/omarchy) with Quickshell.
 3. Link the plugin into your Omarchy config:
    ```
-   omarchy plugin add quickshell-screentime-plugin
+   omarchy plugin add quickshell-screenlimit-plugin
    ```
 4. The shell hot-reloads the plugin on file save — no build step required.
 
@@ -100,7 +100,7 @@ All tests must pass before submitting a PR. CI runs these checks automatically.
 - Hot-reload tracks edits, not moves: restart the shell after renaming or
   moving QML files, or it serves stale trees with phantom paths.
 - Verify visually, not just by lint: open the panel via
-  `quickshell ipc call agx.screen-time open` (with
+  `quickshell ipc call mikwat.screen-limit open` (with
   `QS_CONFIG_PATH=/usr/share/omarchy/shell`) and screenshot with `grim`.
 
 ## Making changes

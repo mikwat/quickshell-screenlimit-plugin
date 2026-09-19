@@ -7,9 +7,9 @@ import "../js/Model.js" as Model
 // Bar button: today's total; hosts the panel. Tracking lives in Service.
 BarWidget {
     id: root
-    moduleName: "agx.screen-time"
+    moduleName: "mikwat.screen-limit"
 
-    readonly property var service: bar && bar.shell ? bar.shell.serviceFor("agx.screen-time") : null
+    readonly property var service: bar && bar.shell ? bar.shell.serviceFor("mikwat.screen-limit") : null
     readonly property string label: service ? service.barLabel : ""
     readonly property bool hasActivity: service ? service.hasActivity : false
 
@@ -177,7 +177,7 @@ BarWidget {
     }
 
     IpcHandler {
-        target: "agx.screen-time"
+        target: "mikwat.screen-limit"
         function open(): void {
             root.open();
         }
@@ -203,7 +203,7 @@ BarWidget {
         }
         function status(): void {
             var p = panelLoader.item;
-            console.log("agx.screen-time status: opened=" + (p ? p.opened : "no-panel") + " label=" + root.label + " hasActivity=" + root.hasActivity + " apps=" + (root.service ? root.service.appList().length : "none"));
+            console.log("mikwat.screen-limit status: opened=" + (p ? p.opened : "no-panel") + " label=" + root.label + " hasActivity=" + root.hasActivity + " apps=" + (root.service ? root.service.appList().length : "none"));
         }
     }
 

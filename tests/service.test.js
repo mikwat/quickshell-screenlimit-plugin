@@ -30,7 +30,7 @@ test("lock and screensaver transitions close and persist the active bucket", () 
   )
 })
 
-test("screen-time debugging is opt-in", () => {
+test("screen-limit debugging is opt-in", () => {
   assert.match(service, /property bool debugLogging: false/)
   assert.match(service, /if \(root\.debugLogging\)\s+console\.warn/)
 })

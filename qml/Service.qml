@@ -21,7 +21,7 @@ Item {
     readonly property var stateModel: Model
 
     readonly property string home: Quickshell.env("HOME")
-    readonly property string dataDir: home + "/.config/omarchy/screen-time"
+    readonly property string dataDir: home + "/.config/omarchy/screen-limit"
     readonly property string historyPath: dataDir + "/history.json"
     // Shared process env (HOME for ~ expansion). Typed var so the
     // Map-vs-Hash literal inference stays in one audited place.
@@ -369,7 +369,7 @@ Item {
         // Non-object sections are discarded with a single warning.
         var clean = Model.sanitizeHistory(historyAdapter.days, historyAdapter.months, historyAdapter.years);
         if (clean.days !== historyAdapter.days || clean.months !== historyAdapter.months || clean.years !== historyAdapter.years)
-            console.warn("agx.screen-time: history.json has malformed sections; ignoring them");
+            console.warn("mikwat.screen-limit: history.json has malformed sections; ignoring them");
         var d = clean.days;
         var m = clean.months;
         // Load-time drops feed the archive too.
@@ -402,7 +402,7 @@ Item {
 
     function onHistoryLoadFailed() {
         // Corrupt files are preserved aside; tracking starts empty immediately.
-        console.warn("agx.screen-time: history load failed, starting empty");
+        console.warn("mikwat.screen-limit: history load failed, starting empty");
         if (!root.backupAttempted) {
             root.backupAttempted = true;
             root.backupPending = true;
@@ -434,11 +434,11 @@ Item {
             // Retry with capped backoff; suspend after 6 straight failures.
             root.saveFailCount++;
             if (root.saveFailCount > 6) {
-                console.warn("agx.screen-time: history save failed (" + FileViewError.toString(error) + "), suspending retries until next change");
+                console.warn("mikwat.screen-limit: history save failed (" + FileViewError.toString(error) + "), suspending retries until next change");
                 return;
             }
             var delay = Math.min(1500 * Math.pow(2, root.saveFailCount - 1), 60000);
-            console.warn("agx.screen-time: history save failed (" + FileViewError.toString(error) + "), retrying in " + delay + "ms");
+            console.warn("mikwat.screen-limit: history save failed (" + FileViewError.toString(error) + "), retrying in " + delay + "ms");
             saveRetryTimer.interval = delay;
             saveRetryTimer.restart();
         }
@@ -460,7 +460,7 @@ Item {
     Process {
         id: ensureDirProc
         environment: root.procEnv
-        command: ["bash", "-c", "mkdir -p \"$HOME/.config/omarchy/screen-time\"; f=\"$HOME/.config/omarchy/screen-time/history.json\"; [[ -f \"$f\" ]] || printf '{}\\n' > \"$f\""]
+        command: ["bash", "-c", "mkdir -p \"$HOME/.config/omarchy/screen-limit\"; f=\"$HOME/.config/omarchy/screen-limit/history.json\"; [[ -f \"$f\" ]] || printf '{}\\n' > \"$f\""]
         onExited: historyFile.reload()
     }
 
@@ -486,7 +486,7 @@ Item {
     Process {
         id: backupProc
         environment: root.procEnv
-        command: ["bash", "-c", "f=\"$HOME/.config/omarchy/screen-time/history.json\"; if [[ -s \"$f\" ]]; then if command -v python3 >/dev/null 2>&1 && python3 -c 'import json,sys; json.load(open(sys.argv[1]))' \"$f\" 2>/dev/null; then :; else mv -f \"$f\" \"$f.corrupt-$(date +%s)\"; fi; fi"]
+        command: ["bash", "-c", "f=\"$HOME/.config/omarchy/screen-limit/history.json\"; if [[ -s \"$f\" ]]; then if command -v python3 >/dev/null 2>&1 && python3 -c 'import json,sys; json.load(open(sys.argv[1]))' \"$f\" 2>/dev/null; then :; else mv -f \"$f\" \"$f.corrupt-$(date +%s)\"; fi; fi"]
         onExited: {
             // Unblock writes; queued state persists on the next tick.
             root.backupPending = false;
@@ -535,7 +535,7 @@ Item {
         onExited: {
             var err = resolverErr.text.trim();
             if (err)
-                console.warn("agx.screen-time: resolver stderr:", err);
+                console.warn("mikwat.screen-limit: resolver stderr:", err);
             root.applyResolvedApp(resolverOut.text.trim());
         }
     }
@@ -577,7 +577,7 @@ Item {
             root.resolveInFlight = false;
             root.resolveForApp = "";
             if (root.debugLogging)
-                console.warn("agx.screen-time: lock started");
+                console.warn("mikwat.screen-limit: lock started");
             var now = Date.now();
             applyState(State.closeActiveBucket(root, root.activeApp, root.activeStart, now, root.todayKey, root.suspendGapMs, root.lastTick));
             root.persist();
@@ -585,7 +585,7 @@ Item {
             var endedAt = Date.now();
             var duration = root.lockStartedAt ? endedAt - root.lockStartedAt : 0;
             if (root.debugLogging)
-                console.warn("agx.screen-time: lock ended, duration=" + duration + "ms");
+                console.warn("mikwat.screen-limit: lock ended, duration=" + duration + "ms");
             root.lockStartedAt = 0;
             // Deferred: with 10s state sources an "unpaused" reading can be
             // stale (screensaver flag clearing just before lock engages).
@@ -603,7 +603,7 @@ Item {
             root.screensaverStartedAt = Date.now();
             root.cancelResume();
             if (root.debugLogging)
-                console.warn("agx.screen-time: screensaver started");
+                console.warn("mikwat.screen-limit: screensaver started");
             var now = Date.now();
             applyState(State.closeActiveBucket(root, root.activeApp, root.activeStart, now, root.todayKey, root.suspendGapMs, root.lastTick));
             root.persist();
@@ -611,7 +611,7 @@ Item {
             var endedAt = Date.now();
             var duration = root.screensaverStartedAt ? endedAt - root.screensaverStartedAt : 0;
             if (root.debugLogging)
-                console.warn("agx.screen-time: screensaver ended, duration=" + duration + "ms");
+                console.warn("mikwat.screen-limit: screensaver ended, duration=" + duration + "ms");
             root.screensaverStartedAt = 0;
             if (!root.sessionLocked)
                 root.scheduleResume();
@@ -665,7 +665,7 @@ Item {
                 // Sandboxed serviceFor may never resolve these (scoped to a
                 // plugin's own service). Warn once instead of failing silent.
                 root.serviceLookupWarned = true;
-                console.warn("agx.screen-time: omarchy.lock/omarchy.idle services unavailable after 10s; " + "falling back to a persistent lock watcher (~10s pause accuracy)");
+                console.warn("mikwat.screen-limit: omarchy.lock/omarchy.idle services unavailable after 10s; " + "falling back to a persistent lock watcher (~10s pause accuracy)");
             }
         }
     }

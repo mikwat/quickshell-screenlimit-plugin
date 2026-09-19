@@ -1411,12 +1411,14 @@ Column {
 
     // ---- Help ---------------------------------------------------------
 
-    // Shared by the link rows below and the hint registry above.
+    // Shared by the link rows below and the hint registry above. Screen
+    // Limit is a fork: tracking bugs and ideas belong upstream, where
+    // that code is maintained, so every row points at Screen Time.
     readonly property var helpItems: [
         {
             glyph: "\uf188",
             label: "Report a bug",
-            sub: "Something broken? Tell us here",
+            sub: "Something broken? Tell upstream here",
             url: "https://github.com/ax1g/quickshell-screentime-plugin/issues/new"
         },
         {
@@ -1433,7 +1435,7 @@ Column {
         },
         {
             glyph: "\uf004",
-            label: "Please leave a like",
+            label: "Like the original",
             sub: "A like on the marketplace keeps it going",
             url: "https://plugins.omarchy.org/plugin.html?id=agx.screen-time"
         }
@@ -1826,7 +1828,7 @@ Column {
                 }
 
                 Text {
-                    text: "Screen Time"
+                    text: "Screen Limit"
                     color: root.foreground
                     font.family: root.fontFamily
                     font.pixelSize: Style.fontPx(1.5)
@@ -1860,11 +1862,22 @@ Column {
                 }
 
                 Text {
-                    text: "Know where your time goes."
+                    text: "Decide when to stop."
                     color: root.foreground
                     opacity: 0.75
                     font.family: root.fontFamily
                     font.pixelSize: Style.font.bodySmall
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                }
+
+                Text {
+                    text: "A fork of Screen Time by agx"
+                    color: root.foreground
+                    opacity: 0.45
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.caption
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
