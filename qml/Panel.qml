@@ -210,6 +210,9 @@ Panel {
     readonly property var limitLog: Model.parseLimitLog(root.prefs.dailyLimitLog)
     readonly property var limitStatus: Model.limitStatus(root.dayTotal, Model.limitForDay(root.limitLog, root.activeDayKey))
 
+    // Sound is on unless muted, so a fresh install alarms audibly.
+    readonly property bool alarmSound: root.prefs.muteAlarmSound !== true
+
     function logLimitChange(minutes) {
         root.writeSetting("dailyLimitLog", Model.logLimitChange(root.limitLog, root.todayKey, minutes));
         root.writeSetting("dailyLimitMinutes", Model.parseDailyLimitMinutes(minutes));
@@ -681,6 +684,7 @@ Panel {
                             aliasEntries: root.aliasEntries
                             dailyLimitMinutes: root.dailyLimitMinutes
                             dailyLimitOptions: root.dailyLimitOptions
+                            alarmSound: root.alarmSound
                             storageLabel: root.storageLabel
                             pluginVersion: root.pluginVersion
                             hintMode: root.hintMode
@@ -712,6 +716,8 @@ Panel {
                                 if (minutes !== root.dailyLimitMinutes)
                                     root.logLimitChange(minutes);
                             }
+                            // Muting is the inverse of the sound now playing.
+                            onAlarmSoundToggled: root.writeSetting("muteAlarmSound", root.alarmSound)
                             onWeekTotalModeToggled: root.writeSetting("weekTotalAsPct", !root.weekTotalAsPct)
                             onTrophyToggled: root.writeSetting("hideRecordTrophy", !root.hideRecordTrophy)
                             onEasterEggsToggled: root.writeSetting("hideEasterEggs", !root.hideEasterEggs)

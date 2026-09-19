@@ -109,6 +109,67 @@ Item {
         return Model.relativeDayLabel(key, root.todayKey);
     }
 
+    // ---- Daily limit alarm -------------------------------------------------
+    // The limit lives in the bar widget's settings, but the alarm lives
+    // here: one service per shell, where a bar surface exists per
+    // monitor, so this is the only place it can fire exactly once.
+    // Pushed values, not bindings — the service has no settings handle.
+    property int dailyLimitMinutes: 0
+    property bool alarmSound: true
+    function setLimitPrefs(minutes, sound) {
+        var m = Model.parseDailyLimitMinutes(minutes);
+        var s = sound !== false;
+        if (m === root.dailyLimitMinutes && s === root.alarmSound)
+            return;
+        root.dailyLimitMinutes = m;
+        root.alarmSound = s;
+    }
+
+    // Spent against the filtered day, exactly like the bar countdown, so
+    // an ignored app never burns the limit or trips the alarm.
+    readonly property double limitTotal: {
+        var day = Model.filterIgnoredDay(root.today, root.ignoredApps);
+        return day ? (day.total || 0) : 0;
+    }
+    readonly property var limitStatus: Model.limitStatus(root.limitTotal, root.dailyLimitMinutes)
+
+    // Last alarm, so the nag repeats on schedule and a new day starts
+    // silent. Session state on purpose: a shell restart while already
+    // over the limit should say so again rather than stay quiet.
+    property string alarmDay: ""
+    property double alarmAt: 0
+
+    function checkLimitAlarm() {
+        // Paused sessions get no alarm: nothing is accruing, and a
+        // locked screen can neither read the notification nor act on it.
+        if (!root.ready || root.sessionLocked || root.screensaverActive)
+            return;
+        var status = root.limitStatus;
+        if (!status || !status.exceeded)
+            return;
+        var now = Date.now();
+        if (!Model.alarmDue(true, root.todayKey, root.alarmDay, root.alarmAt, now))
+            return;
+        root.alarmDay = root.todayKey;
+        root.alarmAt = now;
+        root.soundAlarm(status);
+    }
+
+    // A still-running alarm is alarm enough; never stack processes.
+    function soundAlarm(status) {
+        if (alarmProc.running)
+            return;
+        var over = status.overMs > 0 ? Model.fmt(status.overMs) + " over" : "reached";
+        alarmProc.command = ["bash", "-c", root.alarmScript, "screen-limit-alarm", "Screen time limit " + over, "You have used " + Model.fmt(root.limitTotal) + " of your " + Model.fmt(status.limitMs) + " daily limit.", root.alarmSound ? "1" : "0"];
+        alarmProc.running = true;
+    }
+
+    // Notify first, then sound: the notification is the message, the
+    // sound only makes it noticed, so a box without a player still
+    // alarms. Every branch exits 0 — a missing tool is not an error
+    // worth logging every fifteen minutes.
+    readonly property string alarmScript: "command -v notify-send >/dev/null 2>&1 && notify-send -u critical -a 'Screen Limit' \"$1\" \"$2\"; " + "[ \"$3\" = 1 ] || exit 0; " + "command -v canberra-gtk-play >/dev/null 2>&1 && exec canberra-gtk-play -i alarm-clock-elapsed; " + "s=/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga; [ -f \"$s\" ] || exit 0; " + "command -v paplay >/dev/null 2>&1 && exec paplay \"$s\"; " + "command -v pw-play >/dev/null 2>&1 && exec pw-play \"$s\"; exit 0"
+
     // ---- State transition helpers ------------------------------------------
     // Spread a State.js patch onto live props so bindings fire.
     function applyState(patch) {
@@ -464,6 +525,12 @@ Item {
         onExited: historyFile.reload()
     }
 
+    // Daily limit alarm: command is rebuilt per firing (see soundAlarm).
+    Process {
+        id: alarmProc
+        environment: root.procEnv
+    }
+
     // Polls for missed focus events; real switches are event-driven.
     Timer {
         id: reconcileTimer
@@ -758,6 +825,10 @@ Item {
                 root.persist();
             }
             root.lastTick = now;
+            // Rides the heartbeat rather than a timer of its own: the
+            // day total only moves when this tick commits it, so this is
+            // as soon as a crossing can be seen.
+            root.checkLimitAlarm();
         }
     }
 

@@ -1763,6 +1763,39 @@ test("limitCountdown counts minutes down, then back up as negative", () => {
   assert.equal(Model.limitCountdown(Model.limitStatus(300 * 60000, 120)), "-3h")
 })
 
+test("alarmDue fires on the crossing, then nags on a cadence", () => {
+  const day = "2026-09-19"
+  const noon = Date.parse("2026-09-19T12:00:00Z")
+  // Under the limit: never.
+  assert.equal(Model.alarmDue(false, day, "", 0, noon), false)
+  // First crossing of a day that has not alarmed yet.
+  assert.equal(Model.alarmDue(true, day, "", 0, noon), true)
+  assert.equal(Model.alarmDue(true, day, "2026-09-18", noon - 1000, noon), true)
+  // Just alarmed: quiet until the cadence comes round.
+  assert.equal(Model.alarmDue(true, day, day, noon, noon + 60000), false)
+  assert.equal(
+    Model.alarmDue(true, day, day, noon, noon + Model.ALARM_REPEAT_MS - 1),
+    false,
+  )
+  assert.equal(
+    Model.alarmDue(true, day, day, noon, noon + Model.ALARM_REPEAT_MS),
+    true,
+  )
+  // A stamp from the future (clock jumped back) re-arms instead of
+  // silencing the alarm until the clock catches up.
+  assert.equal(Model.alarmDue(true, day, day, noon + 3600000, noon), true)
+  // Garbage stamps never mute the alarm either.
+  assert.equal(Model.alarmDue(true, day, day, "junk", noon), true)
+  assert.equal(Model.alarmDue(true, day, day, 0, noon), true)
+  // A day key that is not a day never alarms: there is nothing to reset on.
+  assert.equal(Model.alarmDue(true, "", "", 0, noon), false)
+  assert.equal(Model.alarmDue(true, "junk", "", 0, noon), false)
+})
+
+test("the alarm cadence is fifteen minutes", () => {
+  assert.equal(Model.ALARM_REPEAT_MS, 15 * 60000)
+})
+
 test("parseWeekCount keeps presets, rounds legacy up, defaults to 12", () => {
   assert.equal(Model.parseWeekCount(12), 12)
   assert.equal(Model.parseWeekCount(24), 24)

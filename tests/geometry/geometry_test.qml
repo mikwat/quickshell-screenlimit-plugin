@@ -45,6 +45,7 @@ TestCase {
         ]
         dailyLimitMinutes: 120
         dailyLimitOptions: [0, 30, 60, 120, 240, 360, 480]
+        alarmSound: true
         storageLabel: "1 days · 2 months · 3 archived"
         pluginVersion: "1.6.0"
         hintMode: false
@@ -194,6 +195,12 @@ TestCase {
             var pos = box.mapToItem(menu, 0, 0);
             verify(pos.x >= 0 && pos.x + box.width <= menu.width + 1, "limit chip " + labels[i] + " stays inside the menu");
         }
+    }
+
+    function test_alarmToggleOccupies() {
+        var t = findText("Alarm sound");
+        verify(t !== null, "alarm toggle label exists");
+        verify(t.height > 0 && ancestorsOccupy(t), "alarm toggle row occupies");
     }
 
     function test_entriesRender() {

@@ -36,6 +36,7 @@ Column {
     required property var aliasEntries
     required property int dailyLimitMinutes
     required property var dailyLimitOptions
+    required property bool alarmSound
     required property string storageLabel
     required property string pluginVersion
     required property bool hintMode
@@ -54,6 +55,7 @@ Column {
     signal aliasAdded(string from, string to)
     signal aliasRemoved(string from)
     signal dailyLimitSelected(int minutes)
+    signal alarmSoundToggled
     signal resetRequested
     signal wipeRequested
     signal backRequested
@@ -78,6 +80,8 @@ Column {
             root.trophyToggled();
         else if (kind === "easter")
             root.easterEggsToggled();
+        else if (kind === "alarm")
+            root.alarmSoundToggled();
     }
 
     // Hint-mode registry: ordered { tag, kind, sub } entries covering
@@ -121,6 +125,7 @@ Column {
             add("weeks", root.weekOptions[w]);
         for (var g = 0; g < root.dailyLimitOptions.length; g++)
             add("limit", root.dailyLimitOptions[g]);
+        add("toggle", "alarm");
         add("field-ignored", 0);
         add("add-ignored", 0);
         for (var r = 0; r < root.ignoredEntries.length; r++)
@@ -932,6 +937,75 @@ Column {
                             }
                         }
                     }
+                }
+            }
+
+            // Muting leaves the notification: the alarm still lands, it
+            // just stops making noise. Sized explicitly so the row's hit
+            // area cannot collapse inside this implicit-height column.
+            Item {
+                id: alarmRow
+                width: parent.width
+                height: Math.max(alarmLabels.implicitHeight, alarmSwitch.implicitHeight)
+
+                Column {
+                    id: alarmLabels
+                    anchors.left: parent.left
+                    anchors.right: alarmSwitch.left
+                    anchors.rightMargin: Style.space(12)
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Style.space(2)
+
+                    Text {
+                        text: "Alarm sound"
+                        color: root.foreground
+                        opacity: 0.75
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.bodySmall
+                        width: parent.width
+                        elide: Text.ElideRight
+                    }
+
+                    Text {
+                        text: "Play a sound when the limit runs out, and every 15 minutes after"
+                        color: root.foreground
+                        opacity: 0.45
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.caption
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                    }
+                }
+
+                ToggleSwitch {
+                    id: alarmSwitch
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    trackHeight: 18
+                    // The row owns the click; this also drops the cursor-ring
+                    // padding so the track aligns flush with the other controls.
+                    interactive: false
+                    checked: root.alarmSound
+                    foreground: root.foreground
+                    accent: root.accent
+                    onToggled: root.alarmSoundToggled()
+                }
+
+                HintBadge {
+                    readonly property string tag: root.hintTag(root.hintItems, "toggle", "alarm")
+                    label: tag
+                    fontFamily: root.fontFamily
+                    accent: root.accent
+                    show: root.hintMode && tag !== ""
+                    anchors.top: alarmSwitch.top
+                    anchors.right: alarmSwitch.right
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.alarmSoundToggled()
                 }
             }
         }

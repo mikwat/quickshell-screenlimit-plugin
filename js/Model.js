@@ -338,6 +338,24 @@ function limitStatus(totalMs, limitMinutes) {
   }
 }
 
+// Alarm cadence once a day runs past its limit: one alert at the
+// crossing, then a nag every ALARM_REPEAT_MS while the day stays over.
+var ALARM_REPEAT_MS = 15 * 60000
+
+// Whether the limit alarm should sound now, given the last one it
+// sounded (day + timestamp). A day that has never alarmed always may;
+// a new day starts silent again because its key no longer matches.
+function alarmDue(exceeded, dayKey, lastDay, lastAt, now) {
+  if (!exceeded || !isDayKey(dayKey)) return false
+  if (String(lastDay || "") !== dayKey) return true
+  var at = Number(lastAt)
+  if (!isFinite(at) || at <= 0) return true
+  // A backward clock jump leaves a stamp in the future: re-arm instead
+  // of going silent until the clock catches up to it.
+  if (now < at) return true
+  return now - at >= ALARM_REPEAT_MS
+}
+
 // Bar countdown: whole minutes, never seconds, rounded up so the last
 // minute still reads "1m". Past the limit it counts back up as a
 // negative clock ("-12m"), so a glance says which side of zero you are
@@ -2026,6 +2044,8 @@ if (typeof module !== "undefined" && module && module.exports) {
     limitOptionLabel: limitOptionLabel,
     limitStatus: limitStatus,
     limitCountdown: limitCountdown,
+    ALARM_REPEAT_MS: ALARM_REPEAT_MS,
+    alarmDue: alarmDue,
     LIMIT_LOG_MAX: LIMIT_LOG_MAX,
     parseLimitLog: parseLimitLog,
     limitForDay: limitForDay,

@@ -192,3 +192,65 @@ test("corrupt history is set aside without depending on python", () => {
   assert(backup[0].includes(".corrupt-$(date +%s)"))
   assert(!backup[0].includes("|| exit 0"), "no early exit without python")
 })
+
+test("the alarm lives in the service, spending the filtered day", () => {
+  // One service per shell, but a bar surface per monitor: the limit is
+  // pushed in so the alarm can only fire from here.
+  assert.match(service, /function setLimitPrefs\(minutes, sound\)/)
+  assert.match(service, /Model\.parseDailyLimitMinutes\(minutes\)/)
+  assert.match(service, /property bool alarmSound: true/)
+  assert.match(
+    service,
+    /Model\.filterIgnoredDay\(root\.today, root\.ignoredApps\)/,
+  )
+  assert.match(
+    service,
+    /readonly property var limitStatus: Model\.limitStatus\(root\.limitTotal, root\.dailyLimitMinutes\)/,
+  )
+})
+
+test("the alarm stays quiet while paused and between nags", () => {
+  // A locked or screensaved session can neither read the notification
+  // nor act on it, and nothing is accruing anyway.
+  assert.match(
+    service,
+    /function checkLimitAlarm[\s\S]*?root\.sessionLocked \|\| root\.screensaverActive[\s\S]*?return/,
+  )
+  assert.match(
+    service,
+    /function checkLimitAlarm[\s\S]*?!status \|\| !status\.exceeded[\s\S]*?return/,
+  )
+  // The cadence decision is Model's, and firing records what it fired.
+  assert.match(
+    service,
+    /Model\.alarmDue\(true, root\.todayKey, root\.alarmDay, root\.alarmAt, now\)/,
+  )
+  assert.match(
+    service,
+    /function checkLimitAlarm[\s\S]*?root\.alarmDay = root\.todayKey;[\s\S]*?root\.alarmAt = now;[\s\S]*?root\.soundAlarm\(status\)/,
+  )
+  // Never stack alarm processes.
+  assert.match(
+    service,
+    /function soundAlarm[\s\S]*?if \(alarmProc\.running\)\s*\n\s*return/,
+  )
+  // The day total only moves on the heartbeat, so the check rides it.
+  assert.match(
+    service,
+    /root\.lastTick = now;[\s\S]*?root\.checkLimitAlarm\(\)/,
+  )
+})
+
+test("the alarm notifies first and never fails loudly", () => {
+  // The notification is the message; the sound only makes it noticed,
+  // so a box with no player still alarms.
+  assert.match(service, /notify-send -u critical/)
+  assert.match(service, /canberra-gtk-play -i alarm-clock-elapsed/)
+  assert.match(service, /paplay/)
+  assert.match(service, /pw-play/)
+  // Muting drops the sound, never the notification.
+  assert.match(service, /root\.alarmSound \? "1" : "0"/)
+  assert.match(service, /\[ \\"\$3\\" = 1 \] \|\| exit 0/)
+  // Missing tools are not an error worth logging every fifteen minutes.
+  assert.match(service, /exit 0"$/m)
+})

@@ -307,6 +307,33 @@ test("daily limit threads from prefs to bar countdown and hero bar", () => {
   assert.match(bar, /tooltipText: root\.barTooltip/)
 })
 
+test("the alarm sound toggle threads through to the service", () => {
+  // The service owns the alarm; each bar pushes the limit in force and
+  // the sound preference into it.
+  assert.match(bar, /function pushLimitPrefs\(\)/)
+  assert.match(
+    bar,
+    /root\.service\.setLimitPrefs\(root\.dailyLimitMinutes, root\.alarmSound\)/,
+  )
+  assert.match(bar, /onDailyLimitMinutesChanged: root\.pushLimitPrefs\(\)/)
+  assert.match(bar, /onAlarmSoundChanged: root\.pushLimitPrefs\(\)/)
+  assert.match(bar, /Component\.onCompleted: root\.pushLimitPrefs\(\)/)
+  // Sound is on unless muted, so a fresh install alarms audibly.
+  assert.match(bar, /!root\.settingBool\("muteAlarmSound", false\)/)
+  assert.match(panel, /root\.prefs\.muteAlarmSound !== true/)
+  assert.match(panel, /writeSetting\("muteAlarmSound", root\.alarmSound\)/)
+  assert.match(menu, /required property bool alarmSound/)
+  assert.match(menu, /signal alarmSoundToggled/)
+  assert.match(menu, /checked: root\.alarmSound/)
+  assert.match(menu, /onToggled: root\.alarmSoundToggled\(\)/)
+  assert.match(menu, /text: "Alarm sound"/)
+  // The row cannot collapse: it sizes itself, the fill comes after.
+  assert.match(
+    menu,
+    /id: alarmRow[\s\S]*?height: Math\.max\(alarmLabels\.implicitHeight, alarmSwitch\.implicitHeight\)/,
+  )
+})
+
 test("the bar counts the limit down and falls back to the day total", () => {
   // Limit off: the bar is upstream's running total again.
   assert.match(
@@ -873,6 +900,7 @@ test("settings registry covers every pressable in order", () => {
     "hero-reset",
     "weeks",
     "limit",
+    "alarm",
     "field-ignored",
     "add-ignored",
     "remove-ignored",

@@ -52,6 +52,19 @@ BarWidget {
     // Null while the limit is off, which is what hides every limit
     // affordance in the bar.
     readonly property var limitStatus: Model.limitStatus(root.limitTotal, root.dailyLimitMinutes)
+    readonly property bool alarmSound: !root.settingBool("muteAlarmSound", false)
+
+    // The service owns the alarm: one per shell, where a bar surface
+    // exists per monitor. Push what it needs rather than let each bar
+    // fire its own.
+    function pushLimitPrefs() {
+        if (root.service && typeof root.service.setLimitPrefs === "function")
+            root.service.setLimitPrefs(root.dailyLimitMinutes, root.alarmSound);
+    }
+    onServiceChanged: root.pushLimitPrefs()
+    onDailyLimitMinutesChanged: root.pushLimitPrefs()
+    onAlarmSoundChanged: root.pushLimitPrefs()
+    Component.onCompleted: root.pushLimitPrefs()
     readonly property bool limitExceeded: root.limitStatus !== null && root.limitStatus.exceeded
     // With a limit set the bar counts it down instead of counting the
     // day up: the number worth a glance is the one that is left.
