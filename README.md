@@ -4,15 +4,30 @@
 
 # Screen Limit
 
-Know where your time goes. A lightweight service tracks focused time per app,
-shows today's total in the bar, and breaks your history into a donut chart, a
-52-week trend, and a yearly overview — terminal-aware, keyboard-first, fully
-local.
+Decide when to stop. Set a daily screen time limit and the bar counts it down
+as you work, warns you the moment it runs out, and keeps alarming until you
+walk away. Underneath it is a full tracker: focused time per app, a donut
+chart, a 52-week trend and a yearly overview — terminal-aware,
+keyboard-first, fully local.
+
+A fork of [Screen Time](https://github.com/ax1g/quickshell-screentime-plugin)
+by agx, which does everything below except the limit. That project's daily
+*goal* — something to reach — is replaced here by a daily *limit* —
+something to stay under.
 
 ## Features
 
-- Live bar widget: today's total in your bar font, updated as you work.
-  Right-click collapses it to a single glyph; remembered.
+- Daily limit: pick Off/30m/1h/2h/4h/6h/8h in settings and the bar
+  counts down — `1h 23m` left, then `-12m` with a ⚠ once you run past it.
+  A progress bar under the hero total turns urgent there too, and the
+  limit you set today never rewrites yesterday's.
+- Alarm: a critical notification and the system alarm chime the moment the
+  limit runs out, repeated every 15 minutes for as long as you stay over,
+  silent again at midnight. Locked and idle sessions stay quiet, and the
+  sound has an off switch that keeps the notification.
+- Live bar widget: with no limit set it is today's running total, in your
+  bar font, updated as you work. Right-click collapses it to a single
+  glyph; remembered.
 - Per-app tracking: idle, locked, suspend and desktop time never counted. A
   focused terminal shows what runs inside it (`opencode`, not `foot`),
   re-resolved live; `steam_app_123456` becomes the game title from local
@@ -34,15 +49,13 @@ local.
 - Usage patterns: top app, vs yesterday, and busiest day of the week you're
   looking at. Insight and retro colours follow your theme.
 - Configurable: the gear next to SHOW MORE opens sectioned prefs that
-  persist — hide the yearly overview or insights, set the weekly graph to
+  persist — set the daily limit and mute its alarm sound, hide the yearly
+  overview or insights, set the weekly graph to
   12/24/36/52 weeks, rename apps and ignore the noisy ones, see the
   storage footprint and the totals that never expire, recolor the trophy
   and hero icons from theme swatches, mute the playful extras,
   triple-confirmed reset today (archives untouched), or four-click wipe
   everything (no undo).
-- Daily goal: set Off/4/6/8h; a ✓ badge lands in the bar when the day
-  reaches it, with remaining time in the tooltip and a progress bar
-  under the hero total.
 - Keyboard-first: the panel opens, closes, scrolls and triggers every
   control from the keyboard — see [Keybinds & hints](#keybinds--hints)
   below. Summon and control the panel via the `mikwat.screen-limit` IPC
@@ -81,6 +94,11 @@ Requires Omarchy and Hyprland. A Nerd Font provides the glyphs, and
 `python3` (preinstalled on Omarchy) powers terminal and Steam name
 resolution — without it the plugin still tracks, but terminals show under
 their own name (`foot`, `kitty`) instead of what runs inside them.
+
+The alarm notifies through `notify-send` and plays through the first of
+`canberra-gtk-play`, `paplay` or `pw-play` it finds, all preinstalled on
+Omarchy. Missing any of them costs you that half of the alarm and nothing
+else — the countdown and the ⚠ badge never depend on them.
 
 ## Uninstall
 

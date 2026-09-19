@@ -12,6 +12,29 @@ history, kept for reference — they describe that plugin, so their IPC target
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-19
+
+### Added
+
+- Decide when to stop: set a daily screen time limit of 30m, 1h, 2h, 4h, 6h
+  or 8h and the bar counts it down as you work, then counts back up as a
+  negative clock with a ⚠ once you run past it.
+- An alarm you cannot miss: a critical notification and the system alarm
+  chime when the limit runs out, repeating every 15 minutes while you stay
+  over, silent while the screen is locked and again at midnight. The sound
+  has an off switch in settings; the notification stays.
+
+### Changed
+
+- The daily goal is gone: something to stay under replaces something to
+  reach, so the ✓ badge is now a ⚠ and the bar shows time left instead of
+  time spent. Goals set before the fork are not carried over — pick a limit
+  in settings.
+- Screen Limit installs as its own plugin (`mikwat.screen-limit`) with its
+  own history in `~/.config/omarchy/screen-limit/`, so it can sit beside
+  Screen Time instead of replacing it. Starting from an existing history
+  means copying that file across.
+
 ## [1.6.2] - 2026-09-17
 
 ### Added
