@@ -43,8 +43,8 @@ TestCase {
                 to: "browser"
             }
         ]
-        dailyGoalHours: 6
-        dailyGoalOptions: [0, 4, 6, 8]
+        dailyLimitMinutes: 120
+        dailyLimitOptions: [0, 30, 60, 120, 240, 360, 480]
         storageLabel: "1 days · 2 months · 3 archived"
         pluginVersion: "1.6.0"
         hintMode: false
@@ -179,6 +179,21 @@ TestCase {
         var wipe = findText("WIPE ALL");
         verify(wipe !== null, "WIPE ALL exists");
         verify(wipe !== null && wipe.width > 0 && wipe.height > 0 && ancestorsOccupy(wipe), "WIPE occupies");
+    }
+
+    // Seven presets do not fit one row: the Flow must wrap them inside
+    // the menu instead of running off the edge, and every chip must keep
+    // its own width (a zero-width chip is unclickable).
+    function test_limitChipsWrapInsideTheMenu() {
+        var labels = ["Off", "30m", "1h", "2h", "4h", "6h", "8h"];
+        for (var i = 0; i < labels.length; i++) {
+            var chip = findText(labels[i]);
+            verify(chip !== null, "limit chip " + labels[i] + " exists");
+            verify(chip.width > 0 && chip.height > 0 && ancestorsOccupy(chip), "limit chip " + labels[i] + " occupies");
+            var box = chip.parent;
+            var pos = box.mapToItem(menu, 0, 0);
+            verify(pos.x >= 0 && pos.x + box.width <= menu.width + 1, "limit chip " + labels[i] + " stays inside the menu");
+        }
     }
 
     function test_entriesRender() {

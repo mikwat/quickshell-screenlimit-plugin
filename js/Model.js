@@ -292,27 +292,61 @@ function aliasesWithout(value, from) {
   return serializeAliases(obj)
 }
 
-// Daily screen-time goal in whole hours; 0 (or unparseable) means off.
-var DAILY_GOAL_PRESETS = [0, 4, 6, 8]
-function parseDailyGoalHours(value) {
-  var h = Math.floor(Number(value))
-  if (!isFinite(h) || h < 1 || h > 24) return 0
-  return h
+// Daily screen-time limit, stored in whole minutes because the shortest
+// preset is half an hour; 0 (or unparseable) means off. A day is the
+// longest a daily limit can be.
+var MAX_LIMIT_MINUTES = 1440
+var DAILY_LIMIT_PRESETS = [0, 30, 60, 120, 240, 360, 480]
+function parseDailyLimitMinutes(value) {
+  var m = Math.floor(Number(value))
+  if (!isFinite(m) || m < 1 || m > MAX_LIMIT_MINUTES) return 0
+  return m
 }
 
-// Progress toward the daily goal: { goalMs, pct, remainingMs, reached }.
-// Null when the goal is off so callers can hide goal UI entirely.
-function goalProgress(totalMs, goalHours) {
-  var goal = parseDailyGoalHours(goalHours)
-  if (goal <= 0) return null
-  var goalMs = goal * 3600000
+// "5m", "1h", "2h 14m" from whole minutes: the shape the limit presets
+// and the bar countdown share.
+function fmtMinutes(mins) {
+  var m = Math.max(0, Math.floor(Number(mins) || 0))
+  if (m < 60) return m + "m"
+  var h = Math.floor(m / 60)
+  var rest = m % 60
+  return rest === 0 ? h + "h" : h + "h " + rest + "m"
+}
+
+// Preset chip label; 0 is the off switch, not a zero-minute limit.
+function limitOptionLabel(minutes) {
+  var m = Math.floor(Number(minutes))
+  if (!isFinite(m) || m <= 0) return "Off"
+  return fmtMinutes(m)
+}
+
+// Standing against the daily limit:
+// { limitMs, pct, remainingMs, overMs, exceeded }. Null when the limit
+// is off so callers can hide limit UI entirely. Neither duration ever
+// goes negative; which side of zero the day is on reads off `exceeded`.
+function limitStatus(totalMs, limitMinutes) {
+  var minutes = parseDailyLimitMinutes(limitMinutes)
+  if (minutes <= 0) return null
+  var limitMs = minutes * 60000
   var total = Math.max(0, Number(totalMs) || 0)
   return {
-    goalMs: goalMs,
-    pct: Math.min(100, Math.round((total / goalMs) * 100)),
-    remainingMs: Math.max(0, goalMs - total),
-    reached: total >= goalMs,
+    limitMs: limitMs,
+    pct: Math.min(100, Math.round((total / limitMs) * 100)),
+    remainingMs: Math.max(0, limitMs - total),
+    overMs: Math.max(0, total - limitMs),
+    exceeded: total >= limitMs,
   }
+}
+
+// Bar countdown: whole minutes, never seconds, rounded up so the last
+// minute still reads "1m". Past the limit it counts back up as a
+// negative clock ("-12m"), so a glance says which side of zero you are
+// on. The crossing minute itself reads "0m" rather than "-0m".
+function limitCountdown(status) {
+  if (!status) return ""
+  if (!status.exceeded) return fmtMinutes(Math.ceil(status.remainingMs / 60000))
+  var over = fmtMinutes(Math.ceil(status.overMs / 60000))
+  return over === "0m" ? "0m" : "-" + over
 }
 
 // App-detail window: the per-app breakdown is kept for a full year, so
@@ -469,68 +503,69 @@ function isMonthKey(key) {
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(String(key || ""))
 }
 
-// Goal history: [{ day: "YYYY-MM-DD", hours }] recording every change.
-// The goal counts from the day it is set; earlier days never show it,
-// and each day keeps the goal it had (goals may differ day to day).
-function parseGoalLog(value) {
+// Limit history: [{ day: "YYYY-MM-DD", minutes }] recording every change.
+// The limit counts from the day it is set; earlier days never show it,
+// and each day keeps the limit it had (limits may differ day to day).
+function parseLimitLog(value) {
   var out = []
   var raw = Array.isArray(value) ? value : []
   for (var i = 0; i < raw.length; i++) {
     var e = raw[i] || {}
     var day = String(e.day || "")
-    var h = Math.floor(Number(e.hours))
-    if (!isDayKey(day) || !isFinite(h) || h < 0 || h > 24) continue
-    out.push({ day: day, hours: h })
+    var m = Math.floor(Number(e.minutes))
+    if (!isDayKey(day) || !isFinite(m) || m < 0 || m > MAX_LIMIT_MINUTES)
+      continue
+    out.push({ day: day, minutes: m })
   }
   // Latest entry wins per day, chronological order.
   var byDay = {}
-  for (var j = 0; j < out.length; j++) byDay[out[j].day] = out[j].hours
+  for (var j = 0; j < out.length; j++) byDay[out[j].day] = out[j].minutes
   var days = Object.keys(byDay).sort()
   var clean = []
   for (var k = 0; k < days.length; k++) {
-    clean.push({ day: days[k], hours: byDay[days[k]] })
+    clean.push({ day: days[k], minutes: byDay[days[k]] })
   }
   return clean
 }
 
-// Hours in force on key: the latest entry on or before it, else 0 (off).
-function goalForDay(log, key) {
+// Minutes in force on key: the latest entry on or before it, else 0 (off).
+function limitForDay(log, key) {
   var k = String(key || "")
   var best = ""
-  var hours = 0
+  var minutes = 0
   var list = Array.isArray(log) ? log : []
   for (var i = 0; i < list.length; i++) {
     var e = list[i] || {}
     var day = String(e.day || "")
     if (!isDayKey(day) || day > k) continue
-    var h = Math.floor(Number(e.hours))
-    if (!isFinite(h) || h < 0 || h > 24) continue
+    var m = Math.floor(Number(e.minutes))
+    if (!isFinite(m) || m < 0 || m > MAX_LIMIT_MINUTES) continue
     if (day >= best) {
       best = day
-      hours = h
+      minutes = m
     }
   }
-  return hours
+  return minutes
 }
 
-// Record a goal change made today: replaces today's entry when the goal
-// already changed today, else appends. Bounded so restless toggling
-// can't grow settings without limit.
-var GOAL_LOG_MAX = 500
-function logGoalChange(log, todayKey, hours) {
-  var h = Math.floor(Number(hours))
-  if (!isFinite(h) || h < 0 || h > 24) h = 0
+// Record a limit change made today: replaces today's entry when the
+// limit already changed today, else appends. Bounded so restless
+// toggling can't grow settings without limit.
+var LIMIT_LOG_MAX = 500
+function logLimitChange(log, todayKey, minutes) {
+  var m = Math.floor(Number(minutes))
+  if (!isFinite(m) || m < 0 || m > MAX_LIMIT_MINUTES) m = 0
   var tk = isDayKey(todayKey) ? String(todayKey) : ""
   var clean = []
-  var base = parseGoalLog(log)
+  var base = parseLimitLog(log)
   for (var i = 0; i < base.length; i++) {
     if (base[i].day !== tk) clean.push(base[i])
   }
-  if (tk) clean.push({ day: tk, hours: h })
+  if (tk) clean.push({ day: tk, minutes: m })
   clean.sort(function (a, b) {
     return a.day < b.day ? -1 : 1
   })
-  while (clean.length > GOAL_LOG_MAX) clean.shift()
+  while (clean.length > LIMIT_LOG_MAX) clean.shift()
   return clean
 }
 
@@ -1984,13 +2019,17 @@ if (typeof module !== "undefined" && module && module.exports) {
     serializeAliases: serializeAliases,
     aliasesWith: aliasesWith,
     aliasesWithout: aliasesWithout,
-    DAILY_GOAL_PRESETS: DAILY_GOAL_PRESETS,
-    parseDailyGoalHours: parseDailyGoalHours,
-    goalProgress: goalProgress,
-    GOAL_LOG_MAX: GOAL_LOG_MAX,
-    parseGoalLog: parseGoalLog,
-    goalForDay: goalForDay,
-    logGoalChange: logGoalChange,
+    MAX_LIMIT_MINUTES: MAX_LIMIT_MINUTES,
+    DAILY_LIMIT_PRESETS: DAILY_LIMIT_PRESETS,
+    parseDailyLimitMinutes: parseDailyLimitMinutes,
+    fmtMinutes: fmtMinutes,
+    limitOptionLabel: limitOptionLabel,
+    limitStatus: limitStatus,
+    limitCountdown: limitCountdown,
+    LIMIT_LOG_MAX: LIMIT_LOG_MAX,
+    parseLimitLog: parseLimitLog,
+    limitForDay: limitForDay,
+    logLimitChange: logLimitChange,
     APP_DETAIL_DAYS: APP_DETAIL_DAYS,
     WEEK_COUNT_OPTIONS: WEEK_COUNT_OPTIONS,
     parseWeekCount: parseWeekCount,

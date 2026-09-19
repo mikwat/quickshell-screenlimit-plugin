@@ -1693,25 +1693,74 @@ test("filterIgnoredDay strips ignored apps and recomputes the total", () => {
   })
 })
 
-test("parseDailyGoalHours keeps whole hours 1-24, else off", () => {
-  assert.equal(Model.parseDailyGoalHours(6), 6)
-  assert.equal(Model.parseDailyGoalHours("8"), 8)
-  assert.equal(Model.parseDailyGoalHours(0), 0)
-  assert.equal(Model.parseDailyGoalHours(25), 0)
-  assert.equal(Model.parseDailyGoalHours("lots"), 0)
-  assert.equal(Model.parseDailyGoalHours(undefined), 0)
+test("parseDailyLimitMinutes keeps whole minutes 1-1440, else off", () => {
+  assert.equal(Model.parseDailyLimitMinutes(30), 30)
+  assert.equal(Model.parseDailyLimitMinutes("480"), 480)
+  assert.equal(Model.parseDailyLimitMinutes(0), 0)
+  assert.equal(Model.parseDailyLimitMinutes(1441), 0)
+  assert.equal(Model.parseDailyLimitMinutes(-30), 0)
+  assert.equal(Model.parseDailyLimitMinutes("lots"), 0)
+  assert.equal(Model.parseDailyLimitMinutes(undefined), 0)
 })
 
-test("goalProgress reports pct, remaining and reached", () => {
-  assert.equal(Model.goalProgress(3600000, 0), null)
-  const half = Model.goalProgress(3 * 3600000, 6)
+test("limit presets cover off through eight hours", () => {
+  assert.deepEqual(Model.DAILY_LIMIT_PRESETS, [0, 30, 60, 120, 240, 360, 480])
+  assert.deepEqual(Model.DAILY_LIMIT_PRESETS.map(Model.limitOptionLabel), [
+    "Off",
+    "30m",
+    "1h",
+    "2h",
+    "4h",
+    "6h",
+    "8h",
+  ])
+  // Off is the switch, never a zero-minute limit.
+  assert.equal(Model.limitOptionLabel(-5), "Off")
+  assert.equal(Model.limitOptionLabel(90), "1h 30m")
+})
+
+test("limitStatus reports pct, remaining, over and exceeded", () => {
+  assert.equal(Model.limitStatus(3600000, 0), null)
+  const half = Model.limitStatus(3600000, 120)
+  assert.equal(half.limitMs, 2 * 3600000)
   assert.equal(half.pct, 50)
-  assert.equal(half.remainingMs, 3 * 3600000)
-  assert.equal(half.reached, false)
-  const over = Model.goalProgress(7 * 3600000, 6)
+  assert.equal(half.remainingMs, 3600000)
+  assert.equal(half.overMs, 0)
+  assert.equal(half.exceeded, false)
+  // Landing exactly on the limit counts as spent.
+  const exact = Model.limitStatus(2 * 3600000, 120)
+  assert.equal(exact.remainingMs, 0)
+  assert.equal(exact.overMs, 0)
+  assert.equal(exact.exceeded, true)
+  const over = Model.limitStatus(3 * 3600000, 120)
   assert.equal(over.pct, 100)
   assert.equal(over.remainingMs, 0)
-  assert.equal(over.reached, true)
+  assert.equal(over.overMs, 3600000)
+  assert.equal(over.exceeded, true)
+  // Corrupt totals never fake progress.
+  assert.equal(Model.limitStatus("junk", 30).remainingMs, 30 * 60000)
+  assert.equal(Model.limitStatus(-5000, 30).overMs, 0)
+})
+
+test("limitCountdown counts minutes down, then back up as negative", () => {
+  assert.equal(Model.limitCountdown(null), "")
+  assert.equal(Model.limitCountdown(Model.limitStatus(0, 120)), "2h")
+  assert.equal(
+    Model.limitCountdown(Model.limitStatus(37 * 60000, 120)),
+    "1h 23m",
+  )
+  // Rounded up, so the last partial minute still reads 1m, never 0m.
+  assert.equal(
+    Model.limitCountdown(Model.limitStatus(120 * 60000 - 1, 120)),
+    "1m",
+  )
+  // The crossing minute reads 0m rather than a signed zero.
+  assert.equal(Model.limitCountdown(Model.limitStatus(120 * 60000, 120)), "0m")
+  assert.equal(
+    Model.limitCountdown(Model.limitStatus(132 * 60000, 120)),
+    "-12m",
+  )
+  assert.equal(Model.limitCountdown(Model.limitStatus(300 * 60000, 120)), "-3h")
 })
 
 test("parseWeekCount keeps presets, rounds legacy up, defaults to 12", () => {
@@ -2140,55 +2189,59 @@ test("refoldDay inverts through an inverse map on removal", () => {
   })
 })
 
-test("parseGoalLog keeps valid entries sorted with latest per day", () => {
-  assert.deepEqual(Model.parseGoalLog(undefined), [])
-  assert.deepEqual(Model.parseGoalLog("nope"), [])
+test("parseLimitLog keeps valid entries sorted with latest per day", () => {
+  assert.deepEqual(Model.parseLimitLog(undefined), [])
+  assert.deepEqual(Model.parseLimitLog("nope"), [])
   assert.deepEqual(
-    Model.parseGoalLog([
-      { day: "2026-09-13", hours: 8 },
-      { day: "2026-09-11", hours: 6 },
-      { day: "2026-09-11", hours: 4 },
-      { day: "junk", hours: 6 },
-      { day: "2026-09-12", hours: 99 },
+    Model.parseLimitLog([
+      { day: "2026-09-13", minutes: 480 },
+      { day: "2026-09-11", minutes: 60 },
+      { day: "2026-09-11", minutes: 30 },
+      { day: "junk", minutes: 60 },
+      { day: "2026-09-12", minutes: 5000 },
     ]),
     [
-      { day: "2026-09-11", hours: 4 },
-      { day: "2026-09-13", hours: 8 },
+      { day: "2026-09-11", minutes: 30 },
+      { day: "2026-09-13", minutes: 480 },
     ],
   )
 })
 
-test("goalForDay returns the hours in force that day", () => {
+test("limitForDay returns the minutes in force that day", () => {
   const log = [
-    { day: "2026-09-11", hours: 6 },
-    { day: "2026-09-12", hours: 0 },
-    { day: "2026-09-13", hours: 8 },
+    { day: "2026-09-11", minutes: 60 },
+    { day: "2026-09-12", minutes: 0 },
+    { day: "2026-09-13", minutes: 480 },
   ]
-  assert.equal(Model.goalForDay(log, "2026-09-10"), 0)
-  assert.equal(Model.goalForDay(log, "2026-09-11"), 6)
-  assert.equal(Model.goalForDay(log, "2026-09-12"), 0)
-  assert.equal(Model.goalForDay(log, "2026-09-13"), 8)
-  assert.equal(Model.goalForDay(log, "2026-09-20"), 8)
-  assert.equal(Model.goalForDay(null, "2026-09-11"), 0)
-  assert.equal(Model.goalForDay(log, ""), 0)
+  assert.equal(Model.limitForDay(log, "2026-09-10"), 0)
+  assert.equal(Model.limitForDay(log, "2026-09-11"), 60)
+  assert.equal(Model.limitForDay(log, "2026-09-12"), 0)
+  assert.equal(Model.limitForDay(log, "2026-09-13"), 480)
+  assert.equal(Model.limitForDay(log, "2026-09-20"), 480)
+  assert.equal(Model.limitForDay(null, "2026-09-11"), 0)
+  assert.equal(Model.limitForDay(log, ""), 0)
 })
 
-test("logGoalChange appends, replaces same-day, and caps", () => {
-  assert.deepEqual(Model.logGoalChange([], "2026-09-11", 6), [
-    { day: "2026-09-11", hours: 6 },
+test("logLimitChange appends, replaces same-day, and caps", () => {
+  assert.deepEqual(Model.logLimitChange([], "2026-09-11", 30), [
+    { day: "2026-09-11", minutes: 30 },
   ])
   assert.deepEqual(
-    Model.logGoalChange([{ day: "2026-09-11", hours: 6 }], "2026-09-11", 8),
-    [{ day: "2026-09-11", hours: 8 }],
+    Model.logLimitChange(
+      [{ day: "2026-09-11", minutes: 30 }],
+      "2026-09-11",
+      480,
+    ),
+    [{ day: "2026-09-11", minutes: 480 }],
   )
   assert.deepEqual(
-    Model.logGoalChange([{ day: "2026-09-10", hours: 6 }], "2026-09-11", 0),
+    Model.logLimitChange([{ day: "2026-09-10", minutes: 60 }], "2026-09-11", 0),
     [
-      { day: "2026-09-10", hours: 6 },
-      { day: "2026-09-11", hours: 0 },
+      { day: "2026-09-10", minutes: 60 },
+      { day: "2026-09-11", minutes: 0 },
     ],
   )
-  assert.deepEqual(Model.logGoalChange([], "junk", 6), [])
+  assert.deepEqual(Model.logLimitChange([], "junk", 60), [])
   let log = []
   const months = ["2025", "2026"]
   for (const y of months) {
@@ -2200,42 +2253,42 @@ test("logGoalChange appends, replaces same-day, and caps", () => {
           String(m).padStart(2, "0") +
           "-" +
           String(d).padStart(2, "0")
-        log = Model.logGoalChange(log, key, 6)
+        log = Model.logLimitChange(log, key, 60)
       }
     }
   }
-  assert.ok(log.length <= Model.GOAL_LOG_MAX)
+  assert.ok(log.length <= Model.LIMIT_LOG_MAX)
   assert.equal(log[log.length - 1].day, "2026-12-28")
   assert.equal(log[0].day > "2025-01-01", true)
 })
-test("goal progress hides for days without an active goal", () => {
+test("limit standing hides for days without an active limit", () => {
   const log = [
-    { day: "2026-09-11", hours: 6 },
-    { day: "2026-09-12", hours: 0 },
-    { day: "2026-09-13", hours: 8 },
+    { day: "2026-09-11", minutes: 60 },
+    { day: "2026-09-12", minutes: 0 },
+    { day: "2026-09-13", minutes: 480 },
   ]
-  // Huge past total, no goal then: nothing to reach.
+  // Huge past total, no limit then: nothing to exceed.
   assert.equal(
-    Model.goalProgress(12 * 3600000, Model.goalForDay(log, "2026-09-10")),
+    Model.limitStatus(12 * 3600000, Model.limitForDay(log, "2026-09-10")),
     null,
   )
-  // On day: over goal reads reached.
+  // On day: past the limit reads exceeded.
   assert.equal(
-    Model.goalProgress(7 * 3600000, Model.goalForDay(log, "2026-09-11"))
-      .reached,
+    Model.limitStatus(7 * 3600000, Model.limitForDay(log, "2026-09-11"))
+      .exceeded,
     true,
   )
-  // Off day: silent again despite the earlier goal.
+  // Off day: silent again despite the earlier limit.
   assert.equal(
-    Model.goalProgress(7 * 3600000, Model.goalForDay(log, "2026-09-12")),
+    Model.limitStatus(7 * 3600000, Model.limitForDay(log, "2026-09-12")),
     null,
   )
-  // Re-activated with a different goal: judged against 8h, not 6h.
-  const backOn = Model.goalProgress(
+  // Re-set to a longer limit: judged against 8h, not 1h.
+  const backOn = Model.limitStatus(
     7 * 3600000,
-    Model.goalForDay(log, "2026-09-13"),
+    Model.limitForDay(log, "2026-09-13"),
   )
-  assert.equal(backOn.reached, false)
+  assert.equal(backOn.exceeded, false)
   assert.equal(backOn.remainingMs, 3600000)
 })
 test("rhythm takes the bolt, top months take the calendar", () => {

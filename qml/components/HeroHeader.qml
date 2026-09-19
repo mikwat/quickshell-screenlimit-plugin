@@ -22,8 +22,10 @@ Item {
     required property double dayTotal
     required property string activeDayKey
     required property string activeDayLabel
-    // Daily goal progress from Model.goalProgress; null when the goal is off.
-    required property var goalProgress
+    // Daily limit standing from Model.limitStatus; null when off.
+    required property var limitStatus
+    // Urgent palette role for the over-limit bar and caption.
+    required property color urgent
 
     signal expandToggled
     signal calendarToggled
@@ -269,34 +271,36 @@ Item {
             width: parent.width
         }
 
-        // Daily goal progress: thin bar plus a remaining/reached caption.
-        // Hidden entirely while the goal is off (goalProgress null). The
-        // spacer keeps the goal block breathing room below the date line.
+        // Daily limit: thin bar plus a left/over caption. Hidden entirely
+        // while the limit is off (limitStatus null). The spacer keeps the
+        // limit block breathing room below the date line.
         Item {
-            visible: heroHeader.goalProgress !== null
+            visible: heroHeader.limitStatus !== null
             width: parent.width
             height: visible ? Style.space(4) : 0
         }
 
         Rectangle {
-            visible: heroHeader.goalProgress !== null
+            visible: heroHeader.limitStatus !== null
             width: parent.width
             height: 3
             radius: 1.5
             color: Qt.rgba(heroHeader.foreground.r, heroHeader.foreground.g, heroHeader.foreground.b, 0.15)
 
+            // A full bar in the urgent color is the panel's version of
+            // the bar widget's warning badge: spent is spent.
             Rectangle {
-                width: parent.width * (heroHeader.goalProgress ? heroHeader.goalProgress.pct / 100 : 0)
+                width: parent.width * (heroHeader.limitStatus ? heroHeader.limitStatus.pct / 100 : 0)
                 height: parent.height
                 radius: parent.radius
-                color: heroHeader.goalProgress && heroHeader.goalProgress.reached ? heroHeader.foreground : Qt.rgba(heroHeader.foreground.r, heroHeader.foreground.g, heroHeader.foreground.b, 0.55)
+                color: heroHeader.limitStatus && heroHeader.limitStatus.exceeded ? heroHeader.urgent : Qt.rgba(heroHeader.foreground.r, heroHeader.foreground.g, heroHeader.foreground.b, 0.55)
             }
         }
 
         Text {
-            visible: heroHeader.goalProgress !== null
-            text: heroHeader.goalProgress ? (heroHeader.goalProgress.reached ? "Daily goal reached" : Model.fmt(heroHeader.goalProgress.remainingMs) + " left of " + Model.fmt(heroHeader.goalProgress.goalMs) + " goal") : ""
-            color: Qt.darker(heroHeader.foreground, 1.4)
+            visible: heroHeader.limitStatus !== null
+            text: heroHeader.limitStatus ? (heroHeader.limitStatus.exceeded ? Model.fmt(heroHeader.limitStatus.overMs) + " over your " + Model.fmt(heroHeader.limitStatus.limitMs) + " limit" : Model.fmt(heroHeader.limitStatus.remainingMs) + " left of " + Model.fmt(heroHeader.limitStatus.limitMs) + " limit") : ""
+            color: heroHeader.limitStatus && heroHeader.limitStatus.exceeded ? heroHeader.urgent : Qt.darker(heroHeader.foreground, 1.4)
             font.family: heroHeader.fontFamily
             font.pixelSize: Style.font.caption
             elide: Text.ElideRight

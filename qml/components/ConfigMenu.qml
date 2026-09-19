@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Commons
 import qs.Ui
+import "../../js/Model.js" as Model
 
 // Panel config menu: prefs grouped into tinted section cards.
 // Values thread in from BarWidget settings; Panel writes back on signals.
@@ -33,8 +34,8 @@ Column {
     required property string heroDefaultColor
     required property var ignoredEntries
     required property var aliasEntries
-    required property int dailyGoalHours
-    required property var dailyGoalOptions
+    required property int dailyLimitMinutes
+    required property var dailyLimitOptions
     required property string storageLabel
     required property string pluginVersion
     required property bool hintMode
@@ -52,7 +53,7 @@ Column {
     signal ignoredRemoved(string name)
     signal aliasAdded(string from, string to)
     signal aliasRemoved(string from)
-    signal dailyGoalSelected(int hours)
+    signal dailyLimitSelected(int minutes)
     signal resetRequested
     signal wipeRequested
     signal backRequested
@@ -118,8 +119,8 @@ Column {
         add("hero-reset", 0);
         for (var w = 0; w < root.weekOptions.length; w++)
             add("weeks", root.weekOptions[w]);
-        for (var g = 0; g < root.dailyGoalOptions.length; g++)
-            add("goal", root.dailyGoalOptions[g]);
+        for (var g = 0; g < root.dailyLimitOptions.length; g++)
+            add("limit", root.dailyLimitOptions[g]);
         add("field-ignored", 0);
         add("add-ignored", 0);
         for (var r = 0; r < root.ignoredEntries.length; r++)
@@ -176,8 +177,8 @@ Column {
             root.heroColorSelected(root.heroDefaultColor);
         else if (kind === "weeks")
             root.weekWindowSelected(sub);
-        else if (kind === "goal")
-            root.dailyGoalSelected(sub);
+        else if (kind === "limit")
+            root.dailyLimitSelected(sub);
         else if (kind === "field-ignored")
             ignoredInput.forceActiveFocus();
         else if (kind === "add-ignored") {
@@ -822,16 +823,16 @@ Column {
         }
     }
 
-    // ---- Daily goal ---------------------------------------------------
+    // ---- Daily limit --------------------------------------------------
 
     Rectangle {
         width: root.width
-        height: goalBody.implicitHeight + Style.space(24)
+        height: limitBody.implicitHeight + Style.space(24)
         radius: Style.space(8)
         color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.05)
 
         Column {
-            id: goalBody
+            id: limitBody
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
@@ -839,7 +840,7 @@ Column {
             spacing: Style.space(10)
 
             Text {
-                text: "DAILY GOAL"
+                text: "DAILY LIMIT"
                 color: root.foreground
                 opacity: 0.45
                 font.family: root.fontFamily
@@ -848,8 +849,8 @@ Column {
                 font.letterSpacing: 1.5
             }
 
-            // Daily goal presets in hours; 0 is Off. The bar badges a check
-            // and the hero shows remaining once the day reaches the goal.
+            // Daily limit presets in minutes; 0 is Off. The bar counts the
+            // limit down and warns once the day runs past it.
             Column {
                 width: parent.width
                 spacing: Style.space(6)
@@ -859,7 +860,7 @@ Column {
                     spacing: Style.space(2)
 
                     Text {
-                        text: "Daily screen time goal"
+                        text: "Daily screen time limit"
                         color: root.foreground
                         opacity: 0.75
                         font.family: root.fontFamily
@@ -869,7 +870,7 @@ Column {
                     }
 
                     Text {
-                        text: "A check badge appears in the bar when the day reaches it"
+                        text: "The bar counts it down; an alarm sounds when time runs out"
                         color: root.foreground
                         opacity: 0.45
                         font.family: root.fontFamily
@@ -879,20 +880,23 @@ Column {
                     }
                 }
 
-                Row {
-                    id: goalBoxes
-                    spacing: Style.space(6)
+                // Seven presets never fit one row at panel width, so they
+                // wrap instead of eliding off the edge.
+                Flow {
+                    id: limitBoxes
                     anchors.left: parent.left
+                    width: parent.width
+                    spacing: Style.space(6)
 
                     Repeater {
-                        model: root.dailyGoalOptions
+                        model: root.dailyLimitOptions
 
                         Rectangle {
-                            id: goalChip
+                            id: limitChip
 
                             required property int modelData
-                            readonly property bool chosen: modelData === root.dailyGoalHours
-                            width: modelData === 0 ? Style.space(52) : Style.space(44)
+                            readonly property bool chosen: modelData === root.dailyLimitMinutes
+                            width: Math.max(Style.space(44), limitChipLabel.implicitWidth + Style.space(18))
                             height: Style.space(28)
                             radius: Style.space(4)
                             color: chosen ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.15) : "transparent"
@@ -900,12 +904,13 @@ Column {
                             border.width: 1
 
                             Text {
-                                text: goalChip.modelData === 0 ? "Off" : goalChip.modelData + "h"
-                                color: goalChip.chosen ? root.accent : root.foreground
-                                opacity: goalChip.chosen ? 1.0 : 0.6
+                                id: limitChipLabel
+                                text: Model.limitOptionLabel(limitChip.modelData)
+                                color: limitChip.chosen ? root.accent : root.foreground
+                                opacity: limitChip.chosen ? 1.0 : 0.6
                                 font.family: root.fontFamily
                                 font.pixelSize: Style.font.bodySmall
-                                font.bold: goalChip.chosen
+                                font.bold: limitChip.chosen
                                 anchors.centerIn: parent
                             }
 
@@ -913,11 +918,11 @@ Column {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: root.dailyGoalSelected(modelData)
+                                onClicked: root.dailyLimitSelected(modelData)
                             }
 
                             HintBadge {
-                                readonly property string tag: root.hintTag(root.hintItems, "goal", modelData)
+                                readonly property string tag: root.hintTag(root.hintItems, "limit", modelData)
                                 label: tag
                                 fontFamily: root.fontFamily
                                 accent: root.accent

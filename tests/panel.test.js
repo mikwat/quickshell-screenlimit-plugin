@@ -263,42 +263,63 @@ test("settings group into tinted section cards with a red danger zone", () => {
   assert.match(menu, /text: "DISPLAY"/)
   assert.match(menu, /text: "COLORS"/)
   assert.match(menu, /text: "TREND & HISTORY"/)
-  assert.match(menu, /text: "DAILY GOAL"/)
+  assert.match(menu, /text: "DAILY LIMIT"/)
   assert.match(menu, /text: "TRACKING"/)
   assert.match(menu, /text: "DANGER ZONE"/)
   assert.match(menu, /id: dangerBody/)
   assert.match(menu, /root\.urgent\.r, root\.urgent\.g, root\.urgent\.b, 0\.07/)
 })
 
-test("daily goal threads from prefs to bar badge and hero bar", () => {
+test("daily limit threads from prefs to bar countdown and hero bar", () => {
   assert.match(
     panel,
-    /Model\.parseDailyGoalHours\(root\.prefs\.dailyGoalHours\)/,
+    /Model\.parseDailyLimitMinutes\(root\.prefs\.dailyLimitMinutes\)/,
   )
-  // Each day keeps the goal it had: progress reads the log entry for
-  // the viewed day, never the current pref.
+  // Each day keeps the limit it had: the standing reads the log entry
+  // for the viewed day, never the current pref.
   assert.match(
     panel,
-    /Model\.goalProgress\(root\.dayTotal, Model\.goalForDay\(root\.goalLog, root\.activeDayKey\)\)/,
+    /Model\.limitStatus\(root\.dayTotal, Model\.limitForDay\(root\.limitLog, root\.activeDayKey\)\)/,
   )
-  assert.match(panel, /function logGoalChange\(hours\)/)
-  assert.match(panel, /writeSetting\("dailyGoalLog", Model\.logGoalChange/)
-  assert.match(panel, /goalProgress: root\.goalProgress/)
-  assert.match(menu, /required property int dailyGoalHours/)
-  assert.match(menu, /required property var dailyGoalOptions/)
-  assert.match(menu, /signal dailyGoalSelected\(int hours\)/)
-  assert.match(menu, /root\.dailyGoalSelected\(modelData\)/)
-  assert.match(panel, /root\.logGoalChange\(hours\)/)
-  assert.match(hero, /required property var goalProgress/)
-  assert.match(hero, /heroHeader\.goalProgress !== null/)
-  assert.match(bar, /readonly property int dailyGoalHours/)
+  assert.match(panel, /function logLimitChange\(minutes\)/)
+  assert.match(panel, /writeSetting\("dailyLimitLog", Model\.logLimitChange/)
+  assert.match(panel, /limitStatus: root\.limitStatus/)
+  assert.match(panel, /dailyLimitOptions: Model\.DAILY_LIMIT_PRESETS/)
+  assert.match(menu, /required property int dailyLimitMinutes/)
+  assert.match(menu, /required property var dailyLimitOptions/)
+  assert.match(menu, /signal dailyLimitSelected\(int minutes\)/)
+  assert.match(menu, /root\.dailyLimitSelected\(modelData\)/)
+  assert.match(menu, /Model\.limitOptionLabel\(limitChip\.modelData\)/)
+  assert.match(panel, /root\.logLimitChange\(minutes\)/)
+  assert.match(hero, /required property var limitStatus/)
+  assert.match(hero, /heroHeader\.limitStatus !== null/)
+  // Over the limit the hero bar and caption go urgent, not foreground.
+  assert.match(hero, /required property color urgent/)
+  assert.match(hero, /limitStatus\.exceeded \? heroHeader\.urgent/)
+  assert.match(panel, /urgent: Color\.urgent/)
+  assert.match(bar, /readonly property int dailyLimitMinutes/)
   assert.match(
     bar,
-    /Model\.goalForDay\(Model\.parseGoalLog\(root\.setting\("dailyGoalLog", \[\]\)\)/,
+    /Model\.limitForDay\(Model\.parseLimitLog\(root\.setting\("dailyLimitLog", \[\]\)\)/,
   )
-  assert.match(bar, /readonly property bool goalReached/)
-  assert.match(bar, /root\.goalReached \? " ✓" : ""/)
-  assert.match(bar, /root\.goalTooltip/)
+  assert.match(bar, /readonly property bool limitExceeded/)
+  assert.match(bar, /root\.limitExceeded \? " ⚠" : ""/)
+  assert.match(bar, /tooltipText: root\.barTooltip/)
+})
+
+test("the bar counts the limit down and falls back to the day total", () => {
+  // Limit off: the bar is upstream's running total again.
+  assert.match(
+    bar,
+    /readonly property string label: root\.limitStatus \? Model\.limitCountdown\(root\.limitStatus\) : root\.totalLabel/,
+  )
+  // The countdown spends the same filtered day the panel shows, so an
+  // ignored app never burns the limit.
+  assert.match(bar, /Model\.filterIgnoredDay\(root\.service\.today/)
+  assert.match(
+    bar,
+    /readonly property var limitStatus: Model\.limitStatus\(root\.limitTotal, root\.dailyLimitMinutes\)/,
+  )
 })
 
 test("icon-only glyph matches time-mode size", () => {
@@ -410,7 +431,7 @@ test("danger buttons center vertically beside early-wrapping labels", () => {
 test("option pills align left under their labels", () => {
   for (const id of [
     "weekBoxes",
-    "goalBoxes",
+    "limitBoxes",
     "trophySwatches",
     "heroSwatches",
   ]) {
@@ -619,7 +640,7 @@ test("about shows the manifest version", () => {
 
 test("settings header reads Settings with a content subtitle", () => {
   assert.match(panel, /text: "Settings"/)
-  assert.match(panel, /Display, tracking, goals & data/)
+  assert.match(panel, /Display, tracking, limits & data/)
   assert.doesNotMatch(panel, /text: "Screen Limit"/)
 })
 
@@ -695,7 +716,7 @@ test("year cards render values as rich text for medal markup", () => {
   assert.match(card, /text: insightCard\.stat/)
 })
 
-test("goal block breathes below the date line", () => {
+test("limit block breathes below the date line", () => {
   assert.match(hero, /height: visible \? Style\.space\(4\) : 0/)
 })
 
@@ -851,7 +872,7 @@ test("settings registry covers every pressable in order", () => {
     "hero-custom",
     "hero-reset",
     "weeks",
-    "goal",
+    "limit",
     "field-ignored",
     "add-ignored",
     "remove-ignored",

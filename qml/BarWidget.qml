@@ -4,13 +4,14 @@ import qs.Ui
 import qs.Commons
 import "../js/Model.js" as Model
 
-// Bar button: today's total; hosts the panel. Tracking lives in Service.
+// Bar button: the day's limit counting down (today's total with no limit
+// set); hosts the panel. Tracking lives in Service.
 BarWidget {
     id: root
     moduleName: "mikwat.screen-limit"
 
     readonly property var service: bar && bar.shell ? bar.shell.serviceFor("mikwat.screen-limit") : null
-    readonly property string label: service ? service.barLabel : ""
+    readonly property string totalLabel: service ? service.barLabel : ""
     readonly property bool hasActivity: service ? service.hasActivity : false
 
     readonly property string glyph: "󰔟"
@@ -38,24 +39,31 @@ BarWidget {
 
     readonly property bool iconOnly: root.settingBool("iconOnly", false)
 
-    // Daily goal badge: progress counts the same filtered day the panel
-    // shows, so ignored apps never push the goal. The goal in force is
-    // the log entry for today: days before activation show nothing.
-    readonly property int dailyGoalHours: Model.goalForDay(Model.parseGoalLog(root.setting("dailyGoalLog", [])), root.service ? root.service.todayKey : "")
-    readonly property double goalTotal: {
+    // Daily limit: the countdown spends the same filtered day the panel
+    // shows, so ignored apps never burn the limit. The limit in force is
+    // the log entry for today: days before it was set have none.
+    readonly property int dailyLimitMinutes: Model.limitForDay(Model.parseLimitLog(root.setting("dailyLimitLog", [])), root.service ? root.service.todayKey : "")
+    readonly property double limitTotal: {
         if (!root.service)
             return 0;
         var day = Model.filterIgnoredDay(root.service.today, Model.parseIgnoredApps(root.setting("ignoredApps", "")));
         return day ? (day.total || 0) : 0;
     }
-    readonly property bool goalReached: root.dailyGoalHours > 0 && root.goalTotal >= root.dailyGoalHours * 3600000
-    readonly property string goalTooltip: {
-        if (root.dailyGoalHours <= 0)
-            return "";
-        var goal = Model.fmt(root.dailyGoalHours * 3600000);
-        if (root.goalReached)
-            return " · goal reached (" + goal + ")";
-        return " · " + Model.fmt(root.dailyGoalHours * 3600000 - root.goalTotal) + " left of " + goal;
+    // Null while the limit is off, which is what hides every limit
+    // affordance in the bar.
+    readonly property var limitStatus: Model.limitStatus(root.limitTotal, root.dailyLimitMinutes)
+    readonly property bool limitExceeded: root.limitStatus !== null && root.limitStatus.exceeded
+    // With a limit set the bar counts it down instead of counting the
+    // day up: the number worth a glance is the one that is left.
+    readonly property string label: root.limitStatus ? Model.limitCountdown(root.limitStatus) : root.totalLabel
+    readonly property string barTooltip: {
+        if (!root.limitStatus)
+            return root.hasActivity ? "Screen time today \u00b7 " + root.totalLabel : "Screen time \u00b7 no activity yet";
+        var limit = Model.fmt(root.limitStatus.limitMs);
+        var spent = root.totalLabel + " used today";
+        if (root.limitExceeded)
+            return "Screen time limit exceeded by " + Model.fmt(root.limitStatus.overMs) + " (" + limit + " limit) \u00b7 " + spent;
+        return Model.fmt(root.limitStatus.remainingMs) + " left of your " + limit + " limit \u00b7 " + spent;
     }
 
     // Session cache of keys written before the shell delivers settings
@@ -203,7 +211,7 @@ BarWidget {
         }
         function status(): void {
             var p = panelLoader.item;
-            console.log("mikwat.screen-limit status: opened=" + (p ? p.opened : "no-panel") + " label=" + root.label + " hasActivity=" + root.hasActivity + " apps=" + (root.service ? root.service.appList().length : "none"));
+            console.log("mikwat.screen-limit status: opened=" + (p ? p.opened : "no-panel") + " label=" + root.label + " limit=" + (root.dailyLimitMinutes > 0 ? Model.fmtMinutes(root.dailyLimitMinutes) : "off") + " hasActivity=" + root.hasActivity + " apps=" + (root.service ? root.service.appList().length : "none"));
         }
     }
 
@@ -212,13 +220,13 @@ BarWidget {
         anchors.fill: parent
         bar: root.bar
         // Single label at bar size: glyph + duration render uniformly.
-        // A reached daily goal appends a check badge.
-        text: root.vertical ? "" : root.iconOnly ? root.glyph : root.glyph + " " + root.label + (root.goalReached ? " ✓" : "")
+        // An exhausted daily limit appends a warning badge.
+        text: root.vertical ? "" : root.iconOnly ? root.glyph : root.glyph + " " + root.label + (root.limitExceeded ? " ⚠" : "")
         labelVisible: !root.vertical && !root.iconOnly
         hasVisualContent: root.vertical ? root.verticalLines.length > 0 : text !== ""
         fixedHeight: root.vertical ? root.verticalLines.length * Style.bar.iconSlot : -1
         horizontalMargin: 8.5
-        tooltipText: (root.hasActivity ? "Screen time today \u00b7 " + root.label : "Screen time \u00b7 no activity yet") + root.goalTooltip
+        tooltipText: root.barTooltip
         onPressed: function (b) {
             if (b === Qt.RightButton)
                 root.toggleIconOnly();

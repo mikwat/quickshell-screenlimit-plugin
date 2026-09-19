@@ -201,18 +201,18 @@ Panel {
     readonly property var monthNamesShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     readonly property var monthNamesLong: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
-    // Daily goal in whole hours (0 = off) with live progress off the
-    // filtered active day, so ignored apps never push the goal. The
-    // goal log records every change, so each day keeps the goal it
-    // had: days before activation never show it.
-    readonly property var dailyGoalOptions: [0, 4, 6, 8]
-    readonly property int dailyGoalHours: Model.parseDailyGoalHours(root.prefs.dailyGoalHours)
-    readonly property var goalLog: Model.parseGoalLog(root.prefs.dailyGoalLog)
-    readonly property var goalProgress: Model.goalProgress(root.dayTotal, Model.goalForDay(root.goalLog, root.activeDayKey))
+    // Daily limit in whole minutes (0 = off), spent against the filtered
+    // active day, so ignored apps never burn it. The limit log records
+    // every change, so each day keeps the limit it had: days before it
+    // was set never show one.
+    readonly property var dailyLimitOptions: Model.DAILY_LIMIT_PRESETS
+    readonly property int dailyLimitMinutes: Model.parseDailyLimitMinutes(root.prefs.dailyLimitMinutes)
+    readonly property var limitLog: Model.parseLimitLog(root.prefs.dailyLimitLog)
+    readonly property var limitStatus: Model.limitStatus(root.dayTotal, Model.limitForDay(root.limitLog, root.activeDayKey))
 
-    function logGoalChange(hours) {
-        root.writeSetting("dailyGoalLog", Model.logGoalChange(root.goalLog, root.todayKey, hours));
-        root.writeSetting("dailyGoalHours", Model.parseDailyGoalHours(hours));
+    function logLimitChange(minutes) {
+        root.writeSetting("dailyLimitLog", Model.logLimitChange(root.limitLog, root.todayKey, minutes));
+        root.writeSetting("dailyLimitMinutes", Model.parseDailyLimitMinutes(minutes));
     }
 
     // Donut shows the grouped view; the legend expands inline.
@@ -605,7 +605,7 @@ Panel {
                         }
 
                         Text {
-                            text: "Display, tracking, goals & data"
+                            text: "Display, tracking, limits & data"
                             color: Qt.darker(root.contentForeground, 1.4)
                             font.family: root.contentFontFamily
                             font.pixelSize: Style.font.caption
@@ -679,8 +679,8 @@ Panel {
                             heroDefaultColor: root.heroDefaultColor
                             ignoredEntries: root.ignoredList
                             aliasEntries: root.aliasEntries
-                            dailyGoalHours: root.dailyGoalHours
-                            dailyGoalOptions: root.dailyGoalOptions
+                            dailyLimitMinutes: root.dailyLimitMinutes
+                            dailyLimitOptions: root.dailyLimitOptions
                             storageLabel: root.storageLabel
                             pluginVersion: root.pluginVersion
                             hintMode: root.hintMode
@@ -708,9 +708,9 @@ Panel {
                             onAliasRemoved: function (from) {
                                 root.removeAlias(from);
                             }
-                            onDailyGoalSelected: function (hours) {
-                                if (hours !== root.dailyGoalHours)
-                                    root.logGoalChange(hours);
+                            onDailyLimitSelected: function (minutes) {
+                                if (minutes !== root.dailyLimitMinutes)
+                                    root.logLimitChange(minutes);
                             }
                             onWeekTotalModeToggled: root.writeSetting("weekTotalAsPct", !root.weekTotalAsPct)
                             onTrophyToggled: root.writeSetting("hideRecordTrophy", !root.hideRecordTrophy)
@@ -771,9 +771,10 @@ Panel {
                         dayTotal: root.dayTotal
                         activeDayKey: root.activeDayKey
                         activeDayLabel: root.activeDayLabel
-                        goalProgress: root.goalProgress
+                        limitStatus: root.limitStatus
                         hintMode: root.hintMode
                         accent: Color.accent
+                        urgent: Color.urgent
                         tipBackground: root.bar ? root.bar.background : Color.background
                         onExpandToggled: root.toggleExpanded()
                         onCalendarToggled: root.openCalendar(!root.calendarOpen)
