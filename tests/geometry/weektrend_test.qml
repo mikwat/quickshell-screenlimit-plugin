@@ -12,6 +12,10 @@ TestCase {
     name: "WeekTrendGeometry"
     width: 220
     height: 400
+    // Shown for real: `visible` on a child reads the effective flag, so
+    // the limit marker's own visibility is only testable in a live window.
+    when: windowShown
+    visible: true
 
     // Narrow on purpose: the long month-spanning label must elide.
     WeekTrend {
@@ -27,19 +31,70 @@ TestCase {
         visibleWeek: {
             "month": "Sep",
             "days": [
-                { "key": "2026-08-31", "ms": 3600000, "label": "Mon", "isEmpty": false, "isFuture": false, "isToday": false },
-                { "key": "2026-09-01", "ms": 3600000, "label": "Tue", "isEmpty": false, "isFuture": false, "isToday": false },
-                { "key": "2026-09-02", "ms": 3600000, "label": "Wed", "isEmpty": false, "isFuture": false, "isToday": false },
-                { "key": "2026-09-03", "ms": 3600000, "label": "Thu", "isEmpty": false, "isFuture": false, "isToday": false },
-                { "key": "2026-09-04", "ms": 3600000, "label": "Fri", "isEmpty": false, "isFuture": false, "isToday": false },
-                { "key": "2026-09-05", "ms": 0, "label": "Sat", "isEmpty": true, "isFuture": false, "isToday": false },
-                { "key": "2026-09-06", "ms": 0, "label": "Sun", "isEmpty": true, "isFuture": false, "isToday": false }
+                {
+                    "key": "2026-08-31",
+                    "ms": 3600000,
+                    "label": "Mon",
+                    "isEmpty": false,
+                    "isFuture": false,
+                    "isToday": false
+                },
+                {
+                    "key": "2026-09-01",
+                    "ms": 3600000,
+                    "label": "Tue",
+                    "isEmpty": false,
+                    "isFuture": false,
+                    "isToday": false
+                },
+                {
+                    "key": "2026-09-02",
+                    "ms": 3600000,
+                    "label": "Wed",
+                    "isEmpty": false,
+                    "isFuture": false,
+                    "isToday": false
+                },
+                {
+                    "key": "2026-09-03",
+                    "ms": 3600000,
+                    "label": "Thu",
+                    "isEmpty": false,
+                    "isFuture": false,
+                    "isToday": false
+                },
+                {
+                    "key": "2026-09-04",
+                    "ms": 3600000,
+                    "label": "Fri",
+                    "isEmpty": false,
+                    "isFuture": false,
+                    "isToday": false
+                },
+                {
+                    "key": "2026-09-05",
+                    "ms": 0,
+                    "label": "Sat",
+                    "isEmpty": true,
+                    "isFuture": false,
+                    "isToday": false
+                },
+                {
+                    "key": "2026-09-06",
+                    "ms": 0,
+                    "label": "Sun",
+                    "isEmpty": true,
+                    "isFuture": false,
+                    "isToday": false
+                }
             ]
         }
         weekTotalAsPct: false
         visibleWeekTotalMs: 18000000
         axisTicks: [0, 14400000, 28800000]
         axisMaxMs: 28800000
+        limitMs: 14400000
+        urgent: "#ff5555"
         activeDayKey: "2026-09-04"
         hintMode: false
     }
@@ -69,6 +124,45 @@ TestCase {
                 arrows.push(all[i]);
         }
         return arrows;
+    }
+
+    // The limit marker must draw dashes and sit exactly where a bar of
+    // the same length would end, or it marks the wrong line.
+    function test_limitLineTracksTheBarScale() {
+        var all = [];
+        collect(trend, all);
+        var line = null;
+        for (var i = 0; i < all.length; i++) {
+            if (String(all[i]).indexOf("WeekLimitLine") !== -1)
+                line = all[i];
+        }
+        verify(line !== null, "limit line exists");
+        verify(line.visible, "limit line shows while the limit fits the axis");
+        var dashes = [];
+        collect(line, dashes);
+        var painted = 0;
+        for (var d = 0; d < dashes.length; d++) {
+            if (dashes[d] !== line && dashes[d].width > 0 && dashes[d].height > 0)
+                painted++;
+        }
+        verify(painted > 3, "dashes rendered: " + painted);
+        // Half the axis: the marker belongs halfway up the 64px span.
+        var strip = line.parent;
+        var expected = strip.height - Style.space(16) - Style.space(64) * 0.5;
+        verify(Math.abs(line.y - expected) < 1, "line y=" + line.y + " expected=" + expected);
+    }
+
+    function test_limitLineHidesWhenOff() {
+        trend.limitMs = 0;
+        var all = [];
+        collect(trend, all);
+        var line = null;
+        for (var i = 0; i < all.length; i++) {
+            if (String(all[i]).indexOf("WeekLimitLine") !== -1)
+                line = all[i];
+        }
+        verify(line !== null && !line.visible, "no limit, no marker");
+        trend.limitMs = 14400000;
     }
 
     function test_longLabelElides() {

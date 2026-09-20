@@ -147,7 +147,10 @@ Panel {
     readonly property var visibleWeek: root.weekView ? root.weekView.week : null
     readonly property double visibleWeekMax: root.weekView ? root.weekView.max : 0
     // Ticks share the bars' scale so bar tops land on gridlines.
-    readonly property var axisTicks: Model.weekAxisTicks(root.visibleWeekMax)
+    // The week chart marks the limit now in force, so the axis has to
+    // reach it even in a week that never came close.
+    readonly property double weekLimitMs: root.dailyLimitMinutes * 60000
+    readonly property var axisTicks: Model.weekAxisTicks(root.visibleWeekMax, root.weekLimitMs)
     readonly property double axisMaxMs: root.axisTicks.length ? root.axisTicks[root.axisTicks.length - 1] : 0
     readonly property double visibleWeekTotalMs: root.weekView ? root.weekView.totalMs : 0
     property bool expanded: false
@@ -876,6 +879,8 @@ Panel {
                                 visibleWeekTotalMs: root.visibleWeekTotalMs
                                 axisTicks: root.axisTicks
                                 axisMaxMs: root.axisMaxMs
+                                limitMs: root.weekLimitMs
+                                urgent: Color.urgent
                                 activeDayKey: root.activeDayKey
                                 hintMode: root.hintMode
                                 onPrevWeekRequested: root.weekOffset = Math.min(root.maxWeekOffset, root.weekOffset + 1)

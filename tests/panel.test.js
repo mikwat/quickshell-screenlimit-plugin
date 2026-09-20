@@ -1052,6 +1052,44 @@ test("year pager, back buttons and gear carry tooltips", () => {
     /tipBackground: root\.bar \? root\.bar\.background : Color\.background/,
   )
 })
+test("the week chart marks the limit now in force", () => {
+  const limitLine = comp("WeekLimitLine.qml")
+  // The marker reads the current limit, not the viewed day's: it is the
+  // line you are working against today.
+  assert.match(
+    panel,
+    /readonly property double weekLimitMs: root\.dailyLimitMinutes \* 60000/,
+  )
+  assert.match(
+    panel,
+    /Model\.weekAxisTicks\(root\.visibleWeekMax, root\.weekLimitMs\)/,
+  )
+  assert.match(panel, /limitMs: root\.weekLimitMs/)
+  assert.match(trend, /required property double limitMs/)
+  assert.match(trend, /WeekLimitLine \{[\s\S]*?limitMs: root\.limitMs/)
+  // Off (or off-scale) draws nothing at all.
+  assert.match(
+    limitLine,
+    /visible: line\.limitMs > 0 && line\.axisMaxMs > 0 && line\.limitMs <= line\.axisMaxMs/,
+  )
+  // Dashes, not a solid rule, and in the same urgent color the bar and
+  // hero use once the limit is spent.
+  assert.match(limitLine, /color: line\.urgent/)
+  assert.match(trend, /required property color urgent/)
+  assert.match(trend, /WeekLimitLine \{[\s\S]*?urgent: root\.urgent/)
+  assert.match(limitLine, /Repeater \{[\s\S]*?Math\.floor\(/)
+  // Same anchor maths as the gridlines, so the line lands on the scale
+  // the bars are drawn against: bars bottom out space(16) above the
+  // strip edge and grow over space(64).
+  const anchor = /parent\.height - Style\.space\(16\) - Style\.space\(64\) \*/
+  assert.match(comp("WeekTick.qml"), anchor)
+  assert.match(limitLine, anchor)
+  // Drawn over the bars (z 2), so the rule never breaks where a day
+  // crosses it.
+  assert.match(limitLine, /z: 3/)
+  assert.match(trend, /z: 2/)
+})
+
 test("week header nudges the next arrow after the range text", () => {
   assert.match(trend, /anchors\.right: weekTotalLabel\.left/)
   assert.match(trend, /anchors\.left: prevArrow\.right/)

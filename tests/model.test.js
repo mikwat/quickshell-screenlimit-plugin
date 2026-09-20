@@ -824,6 +824,46 @@ test("weekAxisTicks scales with the week's real maximum", () => {
   ])
 })
 
+test("weekAxisTicks lifts the ceiling to fit the daily limit", () => {
+  // Every preset up to the 4h floor leaves the scale exactly as it was.
+  assert.deepEqual(Model.weekAxisTicks(0, 30 * 60000), [
+    0,
+    2 * HOUR_MS,
+    4 * HOUR_MS,
+  ])
+  assert.deepEqual(Model.weekAxisTicks(0, 4 * HOUR_MS), [
+    0,
+    2 * HOUR_MS,
+    4 * HOUR_MS,
+  ])
+  // A 6h limit over a quiet week raises the ceiling so the marker lands
+  // inside the chart instead of above it.
+  assert.deepEqual(Model.weekAxisTicks(HOUR_MS, 6 * HOUR_MS), [
+    0,
+    3 * HOUR_MS,
+    6 * HOUR_MS,
+  ])
+  // A busy week still wins: the limit never shrinks the axis.
+  assert.deepEqual(Model.weekAxisTicks(9 * HOUR_MS, 2 * HOUR_MS), [
+    0,
+    5 * HOUR_MS,
+    9 * HOUR_MS,
+  ])
+  // Off, missing and junk limits behave like no limit at all.
+  assert.deepEqual(
+    Model.weekAxisTicks(5 * HOUR_MS, 0),
+    Model.weekAxisTicks(5 * HOUR_MS),
+  )
+  assert.deepEqual(
+    Model.weekAxisTicks(5 * HOUR_MS, "junk"),
+    Model.weekAxisTicks(5 * HOUR_MS),
+  )
+  assert.deepEqual(
+    Model.weekAxisTicks(5 * HOUR_MS, -9 * HOUR_MS),
+    Model.weekAxisTicks(5 * HOUR_MS),
+  )
+})
+
 test("weekAxisTicks returns empty for junk input", () => {
   assert.deepEqual(Model.weekAxisTicks(null), [])
   assert.deepEqual(Model.weekAxisTicks(-1), [])

@@ -18,6 +18,9 @@ Column {
     required property double visibleWeekTotalMs
     required property var axisTicks
     required property double axisMaxMs
+    // Daily limit in ms; 0 hides the marker.
+    required property double limitMs
+    required property color urgent
     required property string activeDayKey
     required property bool hintMode
 
@@ -170,6 +173,12 @@ Column {
                 }
             }
             // qmllint enable unqualified
+
+            WeekLimitLine {
+                limitMs: root.limitMs
+                axisMaxMs: root.axisMaxMs
+                urgent: root.urgent
+            }
 
             Row {
                 anchors.left: parent.left

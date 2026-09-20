@@ -1368,12 +1368,16 @@ function weekView(days, todayKey, weekCount, offset) {
   }
 }
 
-// Axis ticks anchor to the same max the bars scale against.
-function weekAxisTicks(weekMax) {
+// Axis ticks anchor to the same max the bars scale against. A daily
+// limit raises that reference so its marker always lands inside the
+// chart; every preset up to the 4h floor leaves the scale untouched.
+function weekAxisTicks(weekMax, limitMs) {
   var max = Number(weekMax)
   if (weekMax === null || weekMax === "" || !(max >= 0) || !isFinite(max))
     return []
-  var ref = Math.max(max, TREND_REF_MS)
+  var limit = Number(limitMs)
+  if (!isFinite(limit) || limit < 0) limit = 0
+  var ref = Math.max(max, TREND_REF_MS, limit)
   // The mid gridline label renders as whole hours, so the tick sits on a
   // whole hour too — never 2.5h with a "3h" label.
   var half = Math.round(ref / 2 / 3600000) * 3600000
