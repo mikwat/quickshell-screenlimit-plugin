@@ -63,8 +63,9 @@ something to stay under.
   target (`open`, `toggle`, `resetToday`, `resetAll`, `status`).
 - Private by design: one local JSON file; old days roll into a
   perpetual per-day archive, and only the app breakdown is ever forgotten.
-- Hourglass easter egg: flips over on the hour; gold sparkles on hover;
-  header icons spin as you navigate (mute it all with Playful extras).
+- Timer easter egg: turns a full circle on the hour; gold sparkles on
+  hover; header icons spin as you navigate (mute it all with Playful
+  extras).
 
 ## Keybinds & hints
 

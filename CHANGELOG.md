@@ -36,6 +36,8 @@ history, kept for reference — they describe that plugin, so their IPC target
   own history in `~/.config/omarchy/screen-limit/`, so it can sit beside
   Screen Time instead of replacing it. Starting from an existing history
   means copying that file across.
+- A countdown timer replaces the hourglass in the bar, the panel and the
+  About card: the icon now says what the plugin does.
 
 ### Removed
 
