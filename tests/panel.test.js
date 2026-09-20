@@ -149,7 +149,7 @@ test("week total mode persists instead of resetting on dismiss", () => {
   assert.doesNotMatch(panel, /root\.weekTotalAsPct = false/)
 })
 
-test("hero icon color overrides hourglass, yearly and config glyphs", () => {
+test("hero icon color overrides timer, yearly and config glyphs", () => {
   const drawer = qml("YearDrawer.qml")
   assert.match(
     panel,
@@ -450,12 +450,12 @@ test("navigation celebrates through the header icons", () => {
   assert.match(panel, /id: configGearSpin/)
   assert.match(panel, /id: configGearSpin[\s\S]*?to: 360/)
   assert.match(hero, /gearSpin\.restart\(\);/)
-  // Returning home turns the hourglass a full circle.
-  assert.match(hero, /function spinHourglass\(\)/)
-  assert.match(hero, /heroFlip\.restart\(\)/)
+  // Returning home turns the timer a full circle.
+  assert.match(hero, /function spinHero\(\)/)
+  assert.match(hero, /heroSpin\.restart\(\)/)
   assert.match(panel, /id: heroHeader/)
   assert.match(panel, /function celebrateHome\(\)/)
-  assert.match(panel, /heroHeader\.spinHourglass\(\)/)
+  assert.match(panel, /heroHeader\.spinHero\(\)/)
   // The settings header gear sweeps as its drawer slides in.
   assert.match(panel, /id: configGearSpin/)
   assert.match(panel, /configGearSpin\.restart\(\)/)
@@ -479,10 +479,7 @@ test("drawer switches never read as a return home", () => {
     panel,
     /} else if \(!root\.calendarOpen\) \{\s*\n\s*root\.celebrateHome\(\);/,
   )
-  assert.match(
-    panel,
-    /if \(root\.opened\)\s*\n\s*heroHeader\.spinHourglass\(\)/,
-  )
+  assert.match(panel, /if \(root\.opened\)\s*\n\s*heroHeader\.spinHero\(\)/)
 })
 
 test("config opens expanded like the yearly drawer", () => {
@@ -536,7 +533,7 @@ test("help section links out with icons and a marketplace like", () => {
 test("playful extras mute the header spins", () => {
   const drawer = qml("YearDrawer.qml")
   assert.match(hero, /if \(heroHeader\.easterEggs\)\s*\n\s*gearSpin\.restart/)
-  assert.match(hero, /if \(heroHeader\.easterEggs\)\s*\n\s*heroFlip\.restart/)
+  assert.match(hero, /if \(heroHeader\.easterEggs\)\s*\n\s*heroSpin\.restart/)
   assert.match(panel, /if \(open\) \{\s*\n\s*if \(!root\.hideEasterEggs\)/)
   assert.match(drawer, /required property bool easterEggs/)
   assert.match(drawer, /if \(root\.easterEggs\)\s*\n\s*calendarSwing\.restart/)
@@ -695,7 +692,7 @@ test("one timer glyph marks the plugin everywhere", () => {
   }
 })
 
-test("hourglass brightens on hover like the other heroes", () => {
+test("timer brightens on hover like the other heroes", () => {
   assert.match(hero, /heroIconMouse\.containsMouse \? heroHeader\.foreground/)
 })
 

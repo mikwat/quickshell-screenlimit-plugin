@@ -8,7 +8,7 @@ Item {
     id: heroHeader
     required property color foreground
     required property string fontFamily
-    // Override for the hourglass glyph; "" follows the foreground.
+    // Override for the timer glyph; "" follows the foreground.
     required property string heroColor
     required property bool serviceReady
     required property bool expanded
@@ -35,8 +35,8 @@ Item {
     height: implicitHeight
     implicitHeight: Math.max(heroIcon.implicitHeight, heroLabels.implicitHeight)
 
-    // Easter egg: the hourglass is turned exactly on the hour.
-    property int lastFlipHour: -1
+    // Easter egg: the timer turns a full circle exactly on the hour.
+    property int lastSpinHour: -1
 
     Timer {
         id: hourTick
@@ -46,9 +46,9 @@ Item {
 
         onTriggered: {
             var h = new Date().getHours();
-            if (h !== parent.lastFlipHour) {
-                parent.lastFlipHour = h;
-                heroFlip.restart();
+            if (h !== parent.lastSpinHour) {
+                parent.lastSpinHour = h;
+                heroSpin.restart();
             }
             interval = Model.msUntilNextHour(Date.now());
             restart();
@@ -56,7 +56,7 @@ Item {
     }
 
     SequentialAnimation {
-        id: heroFlip
+        id: heroSpin
 
         NumberAnimation {
             target: heroIcon
@@ -68,11 +68,11 @@ Item {
         }
     }
 
-    // Return-to-main celebration: a full hourglass turn. Reuses the
-    // easter-egg flip and mutes with it.
-    function spinHourglass() {
+    // Return-to-main celebration: a full turn of the timer. Reuses the
+    // easter-egg spin and mutes with it.
+    function spinHero() {
         if (heroHeader.easterEggs)
-            heroFlip.restart();
+            heroSpin.restart();
     }
 
     Text {

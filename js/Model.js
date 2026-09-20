@@ -1191,7 +1191,7 @@ function firstDataYear(days, months, years) {
 }
 
 // Milliseconds from nowMs until the next full hour boundary. Used to turn
-// the hero hourglass exactly on the hour. Falls back to one minute for
+// the hero timer exactly on the hour. Falls back to one minute for
 // input that does not parse as a timestamp.
 function msUntilNextHour(nowMs) {
   var d = new Date(Number(nowMs))

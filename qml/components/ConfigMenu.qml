@@ -371,7 +371,7 @@ Column {
                 font.letterSpacing: 1.5
             }
 
-            // Hero icon color for the hourglass, the yearly hero and the
+            // Hero icon color for the timer, the yearly hero and the
             // settings glyph. Concrete circles only, starting with neutrals.
             Column {
                 width: parent.width

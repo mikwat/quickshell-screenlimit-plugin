@@ -53,7 +53,7 @@ Panel {
             root.writeSetting("weekCount", count);
     }
 
-    // Hero icon color for the hourglass, the yearly hero and the settings
+    // Hero icon color for the timer, the yearly hero and the settings
     // glyph. Options follow the theme; empty follows the theme
     // foreground, so old installs keep it. A stored pick stays selected
     // across theme switches (the menu shows it as a custom slot).
@@ -371,7 +371,7 @@ Panel {
     // while the panel itself stays open (dismiss closes drawers silently).
     function celebrateHome() {
         if (root.opened)
-            heroHeader.spinHourglass();
+            heroHeader.spinHero();
     }
 
     KeyboardPanel {
