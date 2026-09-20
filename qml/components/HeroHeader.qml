@@ -77,7 +77,7 @@ Item {
 
     Text {
         id: heroIcon
-        text: "󰔟"
+        text: "󰔛"
         color: heroHeader.heroColor !== "" ? heroHeader.heroColor : (heroIconMouse.containsMouse ? heroHeader.foreground : Qt.darker(heroHeader.foreground, 1.4))
         font.family: heroHeader.fontFamily
         font.pixelSize: Style.fontPx(2.8)

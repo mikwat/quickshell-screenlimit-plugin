@@ -14,7 +14,7 @@ BarWidget {
     readonly property string totalLabel: service ? service.barLabel : ""
     readonly property bool hasActivity: service ? service.hasActivity : false
 
-    readonly property string glyph: "󰔟"
+    readonly property string glyph: "󰔛"
 
     // Vertical mode stacks glyph + duration tokens to fit icon slots.
     readonly property var verticalLines: {

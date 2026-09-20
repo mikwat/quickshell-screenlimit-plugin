@@ -541,7 +541,7 @@ test("playful extras mute the header spins", () => {
   assert.match(drawer, /required property bool easterEggs/)
   assert.match(drawer, /if \(root\.easterEggs\)\s*\n\s*calendarSwing\.restart/)
   assert.match(panel, /easterEggs: !root\.hideEasterEggs/)
-  assert.match(menu, /Hourglass flip, sparkles and header spins/)
+  assert.match(menu, /Timer spin, sparkles and header spins/)
 })
 
 test("ipc surface routes every panel action", () => {
@@ -681,6 +681,18 @@ test("removing an alias unfolds today through the inverse map", () => {
   assert.match(panel, /var to = root\.appAliases\[from\] \|\| ""/)
   assert.match(panel, /inverse\[String\(to\)\.toLowerCase\(\)\] = from/)
   assert.match(panel, /root\.service\.refoldToday\(inverse\)/)
+})
+
+test("one timer glyph marks the plugin everywhere", () => {
+  // U+F051B (nf-md-timer): a countdown timer, not the hourglass this
+  // forked from. The bar, the panel hero and the About card share it.
+  const timer = "\u{F051B}"
+  assert.match(bar, new RegExp('glyph: "' + timer + '"'))
+  assert.equal(hero.includes(timer), true, "hero icon is the timer")
+  assert.equal(menu.includes(timer), true, "About card is the timer")
+  for (const src of [bar, hero, menu]) {
+    assert.equal(src.includes("\u{F051F}"), false, "no hourglass left")
+  }
 })
 
 test("hourglass brightens on hover like the other heroes", () => {

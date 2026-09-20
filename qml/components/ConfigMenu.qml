@@ -271,7 +271,7 @@ Column {
                     {
                         kind: "easter",
                         label: "Playful extras",
-                        sub: "Hourglass flip, sparkles and header spins",
+                        sub: "Timer spin, sparkles and header spins",
                         shown: !root.hideEasterEggs
                     }
                 ]
@@ -392,7 +392,7 @@ Column {
                     }
 
                     Text {
-                        text: "Hourglass, yearly hero and settings glyph"
+                        text: "Timer, yearly hero and settings glyph"
                         color: root.foreground
                         opacity: 0.45
                         font.family: root.fontFamily
@@ -1739,7 +1739,7 @@ Column {
                 spacing: Style.space(6)
 
                 Text {
-                    text: "󰔟"
+                    text: "󰔛"
                     color: root.accent
                     font.family: root.fontFamily
                     font.pixelSize: Style.fontPx(2.4)
