@@ -594,7 +594,7 @@ Panel {
                         }
 
                         Text {
-                            text: "Display, tracking, limits & data"
+                            text: "Limits, display, tracking & data"
                             color: Qt.darker(root.contentForeground, 1.4)
                             font.family: root.contentFontFamily
                             font.pixelSize: Style.font.caption

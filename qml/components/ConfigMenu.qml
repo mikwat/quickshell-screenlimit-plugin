@@ -100,6 +100,9 @@ Column {
             });
         }
         add("back", 0);
+        for (var g = 0; g < root.dailyLimitOptions.length; g++)
+            add("limit", root.dailyLimitOptions[g]);
+        add("toggle", "alarm");
         var toggleKinds = ["yearly", "daily", "retro", "weektotal", "easter"];
         for (var t = 0; t < toggleKinds.length; t++)
             add("toggle", toggleKinds[t]);
@@ -110,9 +113,6 @@ Column {
         add("hero-reset", 0);
         for (var w = 0; w < root.weekOptions.length; w++)
             add("weeks", root.weekOptions[w]);
-        for (var g = 0; g < root.dailyLimitOptions.length; g++)
-            add("limit", root.dailyLimitOptions[g]);
-        add("toggle", "alarm");
         add("field-ignored", 0);
         add("add-ignored", 0);
         for (var r = 0; r < root.ignoredEntries.length; r++)
@@ -214,6 +214,192 @@ Column {
     onHintModeChanged: {
         if (root.hintMode)
             root.buildHintItems();
+    }
+
+    // ---- Daily limit --------------------------------------------------
+
+    Rectangle {
+        width: root.width
+        height: limitBody.implicitHeight + Style.space(24)
+        radius: Style.space(8)
+        color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.05)
+
+        Column {
+            id: limitBody
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: Style.space(12)
+            spacing: Style.space(10)
+
+            Text {
+                text: "DAILY LIMIT"
+                color: root.foreground
+                opacity: 0.45
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                font.bold: true
+                font.letterSpacing: 1.5
+            }
+
+            // Daily limit presets in minutes; 0 is Off. The bar counts the
+            // limit down and warns once the day runs past it.
+            Column {
+                width: parent.width
+                spacing: Style.space(6)
+
+                Column {
+                    width: parent.width
+                    spacing: Style.space(2)
+
+                    Text {
+                        text: "Daily screen time limit"
+                        color: root.foreground
+                        opacity: 0.75
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.bodySmall
+                        width: parent.width
+                        elide: Text.ElideRight
+                    }
+
+                    Text {
+                        text: "The bar counts it down; an alarm sounds when time runs out"
+                        color: root.foreground
+                        opacity: 0.45
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.caption
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                    }
+                }
+
+                // Seven presets never fit one row at panel width, so they
+                // wrap instead of eliding off the edge.
+                Flow {
+                    id: limitBoxes
+                    anchors.left: parent.left
+                    width: parent.width
+                    spacing: Style.space(6)
+
+                    Repeater {
+                        model: root.dailyLimitOptions
+
+                        Rectangle {
+                            id: limitChip
+
+                            required property int modelData
+                            readonly property bool chosen: modelData === root.dailyLimitMinutes
+                            // Same metrics as the week-window chips above;
+                            // seven of them cannot share one row, which is
+                            // what the Flow is for.
+                            width: Math.max(Style.space(44), limitChipLabel.implicitWidth + Style.space(18))
+                            height: Style.space(28)
+                            radius: Style.space(4)
+                            color: chosen ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.15) : "transparent"
+                            border.color: chosen ? root.accent : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.25)
+                            border.width: 1
+
+                            Text {
+                                id: limitChipLabel
+                                text: Model.limitOptionLabel(limitChip.modelData)
+                                color: limitChip.chosen ? root.accent : root.foreground
+                                opacity: limitChip.chosen ? 1.0 : 0.6
+                                font.family: root.fontFamily
+                                font.pixelSize: Style.font.bodySmall
+                                font.bold: limitChip.chosen
+                                anchors.centerIn: parent
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.dailyLimitSelected(modelData)
+                            }
+
+                            HintBadge {
+                                readonly property string tag: root.hintTag(root.hintItems, "limit", modelData)
+                                label: tag
+                                fontFamily: root.fontFamily
+                                accent: root.accent
+                                show: root.hintMode && tag !== ""
+                                anchors.top: parent.top
+                                anchors.right: parent.right
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Muting leaves the notification: the alarm still lands, it
+            // just stops making noise. Sized explicitly so the row's hit
+            // area cannot collapse inside this implicit-height column.
+            Item {
+                id: alarmRow
+                width: parent.width
+                height: Math.max(alarmLabels.implicitHeight, alarmSwitch.implicitHeight)
+
+                Column {
+                    id: alarmLabels
+                    anchors.left: parent.left
+                    anchors.right: alarmSwitch.left
+                    anchors.rightMargin: Style.space(12)
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Style.space(2)
+
+                    Text {
+                        text: "Alarm sound"
+                        color: root.foreground
+                        opacity: 0.75
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.bodySmall
+                        width: parent.width
+                        elide: Text.ElideRight
+                    }
+
+                    Text {
+                        text: "Play a sound when the limit runs out, and every 15 minutes after"
+                        color: root.foreground
+                        opacity: 0.45
+                        font.family: root.fontFamily
+                        font.pixelSize: Style.font.caption
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                    }
+                }
+
+                ToggleSwitch {
+                    id: alarmSwitch
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    trackHeight: 18
+                    // The row owns the click; this also drops the cursor-ring
+                    // padding so the track aligns flush with the other controls.
+                    interactive: false
+                    checked: root.alarmSound
+                    foreground: root.foreground
+                    accent: root.accent
+                    onToggled: root.alarmSoundToggled()
+                }
+
+                HintBadge {
+                    readonly property string tag: root.hintTag(root.hintItems, "toggle", "alarm")
+                    label: tag
+                    fontFamily: root.fontFamily
+                    accent: root.accent
+                    show: root.hintMode && tag !== ""
+                    anchors.top: alarmSwitch.top
+                    anchors.right: alarmSwitch.right
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.alarmSoundToggled()
+                }
+            }
+        }
     }
 
     // ---- Display ------------------------------------------------------
@@ -661,192 +847,6 @@ Column {
                     font.pixelSize: Style.font.caption
                     width: parent.width
                     wrapMode: Text.WordWrap
-                }
-            }
-        }
-    }
-
-    // ---- Daily limit --------------------------------------------------
-
-    Rectangle {
-        width: root.width
-        height: limitBody.implicitHeight + Style.space(24)
-        radius: Style.space(8)
-        color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.05)
-
-        Column {
-            id: limitBody
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.margins: Style.space(12)
-            spacing: Style.space(10)
-
-            Text {
-                text: "DAILY LIMIT"
-                color: root.foreground
-                opacity: 0.45
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.caption
-                font.bold: true
-                font.letterSpacing: 1.5
-            }
-
-            // Daily limit presets in minutes; 0 is Off. The bar counts the
-            // limit down and warns once the day runs past it.
-            Column {
-                width: parent.width
-                spacing: Style.space(6)
-
-                Column {
-                    width: parent.width
-                    spacing: Style.space(2)
-
-                    Text {
-                        text: "Daily screen time limit"
-                        color: root.foreground
-                        opacity: 0.75
-                        font.family: root.fontFamily
-                        font.pixelSize: Style.font.bodySmall
-                        width: parent.width
-                        elide: Text.ElideRight
-                    }
-
-                    Text {
-                        text: "The bar counts it down; an alarm sounds when time runs out"
-                        color: root.foreground
-                        opacity: 0.45
-                        font.family: root.fontFamily
-                        font.pixelSize: Style.font.caption
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                    }
-                }
-
-                // Seven presets never fit one row at panel width, so they
-                // wrap instead of eliding off the edge.
-                Flow {
-                    id: limitBoxes
-                    anchors.left: parent.left
-                    width: parent.width
-                    spacing: Style.space(6)
-
-                    Repeater {
-                        model: root.dailyLimitOptions
-
-                        Rectangle {
-                            id: limitChip
-
-                            required property int modelData
-                            readonly property bool chosen: modelData === root.dailyLimitMinutes
-                            // Same metrics as the week-window chips above;
-                            // seven of them cannot share one row, which is
-                            // what the Flow is for.
-                            width: Math.max(Style.space(44), limitChipLabel.implicitWidth + Style.space(18))
-                            height: Style.space(28)
-                            radius: Style.space(4)
-                            color: chosen ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.15) : "transparent"
-                            border.color: chosen ? root.accent : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.25)
-                            border.width: 1
-
-                            Text {
-                                id: limitChipLabel
-                                text: Model.limitOptionLabel(limitChip.modelData)
-                                color: limitChip.chosen ? root.accent : root.foreground
-                                opacity: limitChip.chosen ? 1.0 : 0.6
-                                font.family: root.fontFamily
-                                font.pixelSize: Style.font.bodySmall
-                                font.bold: limitChip.chosen
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.dailyLimitSelected(modelData)
-                            }
-
-                            HintBadge {
-                                readonly property string tag: root.hintTag(root.hintItems, "limit", modelData)
-                                label: tag
-                                fontFamily: root.fontFamily
-                                accent: root.accent
-                                show: root.hintMode && tag !== ""
-                                anchors.top: parent.top
-                                anchors.right: parent.right
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Muting leaves the notification: the alarm still lands, it
-            // just stops making noise. Sized explicitly so the row's hit
-            // area cannot collapse inside this implicit-height column.
-            Item {
-                id: alarmRow
-                width: parent.width
-                height: Math.max(alarmLabels.implicitHeight, alarmSwitch.implicitHeight)
-
-                Column {
-                    id: alarmLabels
-                    anchors.left: parent.left
-                    anchors.right: alarmSwitch.left
-                    anchors.rightMargin: Style.space(12)
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: Style.space(2)
-
-                    Text {
-                        text: "Alarm sound"
-                        color: root.foreground
-                        opacity: 0.75
-                        font.family: root.fontFamily
-                        font.pixelSize: Style.font.bodySmall
-                        width: parent.width
-                        elide: Text.ElideRight
-                    }
-
-                    Text {
-                        text: "Play a sound when the limit runs out, and every 15 minutes after"
-                        color: root.foreground
-                        opacity: 0.45
-                        font.family: root.fontFamily
-                        font.pixelSize: Style.font.caption
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                    }
-                }
-
-                ToggleSwitch {
-                    id: alarmSwitch
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    trackHeight: 18
-                    // The row owns the click; this also drops the cursor-ring
-                    // padding so the track aligns flush with the other controls.
-                    interactive: false
-                    checked: root.alarmSound
-                    foreground: root.foreground
-                    accent: root.accent
-                    onToggled: root.alarmSoundToggled()
-                }
-
-                HintBadge {
-                    readonly property string tag: root.hintTag(root.hintItems, "toggle", "alarm")
-                    label: tag
-                    fontFamily: root.fontFamily
-                    accent: root.accent
-                    show: root.hintMode && tag !== ""
-                    anchors.top: alarmSwitch.top
-                    anchors.right: alarmSwitch.right
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.alarmSoundToggled()
                 }
             }
         }

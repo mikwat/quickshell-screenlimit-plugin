@@ -253,6 +253,31 @@ test("daily limit threads from prefs to bar countdown and hero bar", () => {
   assert.match(bar, /tooltipText: root\.barTooltip/)
 })
 
+test("the daily limit card opens the settings page", () => {
+  // The limit is what the panel is for, so its card comes before every
+  // other section.
+  const order = ["DAILY LIMIT", "DISPLAY", "COLORS", "TREND & HISTORY"]
+  const at = order.map((title) => menu.indexOf('text: "' + title + '"'))
+  for (const [i, pos] of at.entries()) {
+    assert(pos > -1, order[i] + " card exists")
+  }
+  assert.deepEqual(
+    at,
+    [...at].sort((a, b) => a - b),
+    "cards render in limit-first order",
+  )
+  // Hint tags are handed out in render order, so the limit pressables
+  // move with the card or the badges point at the wrong rows.
+  const registry = menu.slice(
+    menu.indexOf("function buildHintItems"),
+    menu.indexOf("function hintTag("),
+  )
+  assert.match(
+    registry,
+    /add\("back", 0\);[\s\S]*?add\("limit"[\s\S]*?add\("toggle", "alarm"\);[\s\S]*?toggleKinds/,
+  )
+})
+
 test("the alarm sound toggle threads through to the service", () => {
   // The service owns the alarm; each bar pushes the limit in force and
   // the sound preference into it.
@@ -599,7 +624,7 @@ test("about shows the manifest version", () => {
 
 test("settings header reads Settings with a content subtitle", () => {
   assert.match(panel, /text: "Settings"/)
-  assert.match(panel, /Display, tracking, limits & data/)
+  assert.match(panel, /Limits, display, tracking & data/)
   assert.doesNotMatch(panel, /text: "Screen Limit"/)
 })
 
