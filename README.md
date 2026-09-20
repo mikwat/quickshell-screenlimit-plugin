@@ -159,9 +159,9 @@ your checkout is all you need to iterate:
 
 ```bash
 ln -s "$PWD" ~/.config/omarchy/plugins/mikwat.screen-limit
-node --check js/Model.js && node --check js/State.js
+node --check js/Model.js && node --check js/State.js && node --check js/Password.js
 npx -y prettier@3.9.6 --no-semi --check js/ tests/
-node --test tests/model.test.js tests/state.test.js tests/service.test.js tests/panel.test.js
+node --test tests/model.test.js tests/state.test.js tests/service.test.js tests/panel.test.js tests/password.test.js
 ruff check python/ tests/ && ruff format --check python/ tests/
 python3 -m unittest discover -s tests
 qmllint -I lint qml/*.qml qml/components/*.qml

@@ -20,11 +20,11 @@ jobs:
         with:
           node-version: 20
       - name: Syntax check
-        run: node --check js/Model.js && node --check js/State.js
+        run: node --check js/Model.js && node --check js/State.js && node --check js/Password.js
       - name: "Format check (prettier, no semicolons)"
         run: npx -y prettier@3.9.6 --no-semi --check js/ tests/
       - name: Unit tests
-        run: node --test tests/model.test.js tests/state.test.js tests/service.test.js tests/panel.test.js
+        run: node --test tests/model.test.js tests/state.test.js tests/service.test.js tests/panel.test.js tests/password.test.js
 
   python:
     name: Python lint + format + tests

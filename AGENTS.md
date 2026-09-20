@@ -35,10 +35,11 @@ rebaseable.
 ├── js/                     # Pure logic, Node- and QML-importable
 │   ├── Model.js            # Display math (formatting, donut, trends, years)
 │   ├── State.js            # Transitions (buckets, suspend, midnight)
+│   ├── Password.js         # Settings-lock hashing (SHA-256, salted)
 │   └── browser_aliases.json
 ├── python/                 # Terminal/Steam foreground resolver
 │   └── resolve_app.py
-├── tests/                  # model, state, service, panel (node) + resolver (unittest)
+├── tests/                  # model, state, service, panel, password (node) + resolver (unittest)
 ├── lint/                   # qmllint import stubs (see lint/README.md)
 ├── docs/assets/            # Historical changelog images
 └── manifest.json           # Plugin id, version, entry points
@@ -51,9 +52,9 @@ read-only mirrors of the service.
 ## Commands
 
 ```bash
-node --check js/Model.js && node --check js/State.js
+node --check js/Model.js && node --check js/State.js && node --check js/Password.js
 npx -y prettier@3.9.6 --no-semi --check js/ tests/
-node --test tests/model.test.js tests/state.test.js tests/service.test.js tests/panel.test.js
+node --test tests/model.test.js tests/state.test.js tests/service.test.js tests/panel.test.js tests/password.test.js
 ruff check python/ tests/ && ruff format --check python/ tests/
 python3 -m unittest discover -s tests
 qmllint -I lint qml/*.qml qml/components/*.qml   # MaxWarnings=0: any warning fails
