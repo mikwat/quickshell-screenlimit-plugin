@@ -17,7 +17,7 @@ something to stay under.
 
 ## Features
 
-- Daily limit: pick Off/30m/1h/2h/4h/6h/8h in settings and the bar
+- Daily limit: pick Off/30m/1h/2h/4h/6h in settings and the bar
   counts down — `1h 23m` left, then `-12m` with a ⚠ once you run past it.
   A progress bar under the hero total turns urgent there too, and the
   limit you set today never rewrites yesterday's.
@@ -41,7 +41,8 @@ something to stay under.
   scrollable list.
 - 52-week trend: paginated Mon–Sun pages with date-range headers
   (`Aug 31 – Sep 6, 2026 · W36`); click any day to inspect it, click again
-  for today. Header total flips between time and share of the week's
+  for today. A dashed line marks your limit, so the days that crossed it
+  stand out. Header total flips between time and share of the week's
   168 hours.
 - Yearly overview: per-month bars across every recorded year, plus a
   Wrapped-style retro — day counts, longest streak and break, top months,
@@ -52,8 +53,8 @@ something to stay under.
   persist — set the daily limit and mute its alarm sound, hide the yearly
   overview or insights, set the weekly graph to
   12/24/36/52 weeks, rename apps and ignore the noisy ones, see the
-  storage footprint and the totals that never expire, recolor the trophy
-  and hero icons from theme swatches, mute the playful extras,
+  storage footprint and the totals that never expire, recolor the hero
+  icons from theme swatches, mute the playful extras,
   triple-confirmed reset today (archives untouched), or four-click wipe
   everything (no undo).
 - Keyboard-first: the panel opens, closes, scrolls and triggers every
