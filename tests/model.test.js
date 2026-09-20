@@ -1641,8 +1641,8 @@ test("parseDailyLimitMinutes keeps whole minutes 1-1440, else off", () => {
   assert.equal(Model.parseDailyLimitMinutes(undefined), 0)
 })
 
-test("limit presets cover off through eight hours", () => {
-  assert.deepEqual(Model.DAILY_LIMIT_PRESETS, [0, 30, 60, 120, 240, 360, 480])
+test("limit presets cover off through six hours", () => {
+  assert.deepEqual(Model.DAILY_LIMIT_PRESETS, [0, 30, 60, 120, 240, 360])
   assert.deepEqual(Model.DAILY_LIMIT_PRESETS.map(Model.limitOptionLabel), [
     "Off",
     "30m",
@@ -1650,7 +1650,6 @@ test("limit presets cover off through eight hours", () => {
     "2h",
     "4h",
     "6h",
-    "8h",
   ])
   // Off is the switch, never a zero-minute limit.
   assert.equal(Model.limitOptionLabel(-5), "Off")

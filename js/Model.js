@@ -296,7 +296,7 @@ function aliasesWithout(value, from) {
 // preset is half an hour; 0 (or unparseable) means off. A day is the
 // longest a daily limit can be.
 var MAX_LIMIT_MINUTES = 1440
-var DAILY_LIMIT_PRESETS = [0, 30, 60, 120, 240, 360, 480]
+var DAILY_LIMIT_PRESETS = [0, 30, 60, 120, 240, 360]
 function parseDailyLimitMinutes(value) {
   var m = Math.floor(Number(value))
   if (!isFinite(m) || m < 1 || m > MAX_LIMIT_MINUTES) return 0

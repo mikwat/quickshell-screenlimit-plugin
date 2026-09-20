@@ -40,7 +40,7 @@ TestCase {
             }
         ]
         dailyLimitMinutes: 120
-        dailyLimitOptions: [0, 30, 60, 120, 240, 360, 480]
+        dailyLimitOptions: [0, 30, 60, 120, 240, 360]
         alarmSound: true
         storageLabel: "1 days · 2 months · 3 archived"
         pluginVersion: "1.6.0"
@@ -182,7 +182,7 @@ TestCase {
     // the menu instead of running off the edge, and every chip must keep
     // its own width (a zero-width chip is unclickable).
     function test_limitChipsWrapInsideTheMenu() {
-        var labels = ["Off", "30m", "1h", "2h", "4h", "6h", "8h"];
+        var labels = ["Off", "30m", "1h", "2h", "4h", "6h"];
         for (var i = 0; i < labels.length; i++) {
             var chip = findText(labels[i]);
             verify(chip !== null, "limit chip " + labels[i] + " exists");
