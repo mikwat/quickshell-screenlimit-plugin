@@ -527,7 +527,10 @@ test("help section links out with icons and a marketplace like", () => {
   assert.match(menu, /"Like the original"/)
   assert.match(menu, /plugin\.html\?id=agx\.screen-time/)
   assert.match(menu, /Qt\.openUrlExternally\(modelData\.url\)/)
-  assert.match(menu, /github\.com\/ax1g\/quickshell-screentime-plugin/)
+  // Bugs and pull requests come to this fork; the marketplace row still
+  // credits the project it was forked from.
+  assert.match(menu, /github\.com\/mikwat\/quickshell-screenlimit-plugin/)
+  assert.doesNotMatch(menu, /github\.com\/ax1g/)
 })
 
 test("playful extras mute the header spins", () => {

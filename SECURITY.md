@@ -19,5 +19,6 @@ those as a private security advisory there
 rather than a public issue, so a fix can land before details are disclosed.
 
 Issues specific to this fork — the daily limit, the bar countdown or the
-alarm — belong to whoever runs this checkout; report them privately to the
-maintainer of the fork you installed from.
+alarm — belong here: open a private advisory on
+[mikwat/quickshell-screenlimit-plugin](https://github.com/mikwat/quickshell-screenlimit-plugin/security/advisories/new)
+rather than a public issue.

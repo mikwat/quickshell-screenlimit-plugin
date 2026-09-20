@@ -85,12 +85,12 @@ list.
 ## Install
 
 ```bash
-omarchy plugin add /path/to/quickshell-screenlimit-plugin
+omarchy plugin add https://github.com/mikwat/quickshell-screenlimit-plugin.git
 omarchy plugin enable mikwat.screen-limit
 ```
 
-`omarchy plugin add` clones from anywhere git can reach, a local checkout
-included.
+`omarchy plugin add` clones from anywhere git can reach, so a local
+checkout works too — hand it a path instead of the URL.
 
 Requires Omarchy and Hyprland. A Nerd Font provides the glyphs, and
 `python3` (preinstalled on Omarchy) powers terminal and Steam name

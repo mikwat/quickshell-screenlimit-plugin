@@ -7,7 +7,7 @@ started.
 
 1. Clone the repo:
    ```
-   git clone https://github.com/ax1g/quickshell-screenlimit-plugin.git
+   git clone git@github.com:mikwat/quickshell-screenlimit-plugin.git
    ```
 2. Install [Omarchy](https://github.com/ax1g/omarchy) with Quickshell.
 3. Link the plugin into your Omarchy config:

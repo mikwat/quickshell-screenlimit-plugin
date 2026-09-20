@@ -168,12 +168,16 @@ belongs to upstream's `agx.screen-time`. Releasing means tagging this
 checkout and re-pointing installs at it:
 
 ```bash
-git tag -a vX.Y.Z -m vX.Y.Z && git push --tags   # only if a remote exists
+git push origin main
+git tag -a vX.Y.Z -m vX.Y.Z && git push origin --tags
 omarchy plugin update mikwat.screen-limit
 ```
 
-Upstream fixes come in through the `upstream` remote
-(`git fetch upstream && git rebase upstream/main`). The limit feature
+Two remotes, and they are not interchangeable: `origin`
+(`mikwat/quickshell-screenlimit-plugin`) is where this fork lives and
+where installs clone from; `upstream` (`ax1g/quickshell-screentime-plugin`)
+is read-only, the source of the tracker underneath. Upstream fixes come
+in through it (`git fetch upstream && git rebase upstream/main`). The limit feature
 lives in a small set of files (`js/Model.js`, `qml/Service.qml`,
 `qml/BarWidget.qml`, `qml/Panel.qml`, `qml/components/ConfigMenu.qml`,
 `qml/components/HeroHeader.qml`) precisely so those rebases stay cheap.

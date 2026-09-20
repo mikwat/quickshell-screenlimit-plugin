@@ -1331,27 +1331,27 @@ Column {
 
     // ---- Help ---------------------------------------------------------
 
-    // Shared by the link rows below and the hint registry above. Screen
-    // Limit is a fork: tracking bugs and ideas belong upstream, where
-    // that code is maintained, so every row points at Screen Time.
+    // Shared by the link rows below and the hint registry above. Bugs
+    // and pull requests come to the fork that ships this build; the
+    // marketplace row still points at the project it came from.
     readonly property var helpItems: [
         {
             glyph: "\uf188",
             label: "Report a bug",
-            sub: "Something broken? Tell upstream here",
-            url: "https://github.com/ax1g/quickshell-screentime-plugin/issues/new"
+            sub: "Something broken? Tell us here",
+            url: "https://github.com/mikwat/quickshell-screenlimit-plugin/issues/new"
         },
         {
             glyph: "\uf0eb",
             label: "Share an idea",
             sub: "A feature you wish existed",
-            url: "https://github.com/ax1g/quickshell-screentime-plugin/issues"
+            url: "https://github.com/mikwat/quickshell-screenlimit-plugin/issues"
         },
         {
             glyph: "\uf126",
             label: "Contribute",
             sub: "Pull requests welcome",
-            url: "https://github.com/ax1g/quickshell-screentime-plugin"
+            url: "https://github.com/mikwat/quickshell-screenlimit-plugin"
         },
         {
             glyph: "\uf004",
