@@ -901,6 +901,9 @@ Column {
 
                             required property int modelData
                             readonly property bool chosen: modelData === root.dailyLimitMinutes
+                            // Same metrics as the week-window chips above;
+                            // seven of them cannot share one row, which is
+                            // what the Flow is for.
                             width: Math.max(Style.space(44), limitChipLabel.implicitWidth + Style.space(18))
                             height: Style.space(28)
                             radius: Style.space(4)
