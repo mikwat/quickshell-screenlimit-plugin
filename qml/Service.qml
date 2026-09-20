@@ -144,6 +144,10 @@ Item {
         // locked screen can neither read the notification nor act on it.
         if (!root.ready || root.sessionLocked || root.screensaverActive)
             return;
+        // A still-sounding alarm is alarm enough. Checked before the
+        // cadence is stamped, so a skipped one never spends the nag.
+        if (alarmProc.running)
+            return;
         var status = root.limitStatus;
         if (!status || !status.exceeded)
             return;
@@ -155,10 +159,7 @@ Item {
         root.soundAlarm(status);
     }
 
-    // A still-running alarm is alarm enough; never stack processes.
     function soundAlarm(status) {
-        if (alarmProc.running)
-            return;
         var over = status.overMs > 0 ? Model.fmt(status.overMs) + " over" : "reached";
         alarmProc.command = ["bash", "-c", root.alarmScript, "screen-limit-alarm", "Screen time limit " + over, "You have used " + Model.fmt(root.limitTotal) + " of your " + Model.fmt(status.limitMs) + " daily limit.", root.alarmSound ? "1" : "0"];
         alarmProc.running = true;

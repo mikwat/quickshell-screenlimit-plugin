@@ -229,10 +229,11 @@ test("the alarm stays quiet while paused and between nags", () => {
     service,
     /function checkLimitAlarm[\s\S]*?root\.alarmDay = root\.todayKey;[\s\S]*?root\.alarmAt = now;[\s\S]*?root\.soundAlarm\(status\)/,
   )
-  // Never stack alarm processes.
+  // Never stack alarm processes, and never spend the nag on one that
+  // did not sound: the check comes before the cadence is stamped.
   assert.match(
     service,
-    /function soundAlarm[\s\S]*?if \(alarmProc\.running\)\s*\n\s*return/,
+    /function checkLimitAlarm[\s\S]*?if \(alarmProc\.running\)\s*\n\s*return;[\s\S]*?root\.alarmAt = now/,
   )
   // The day total only moves on the heartbeat, so the check rides it.
   assert.match(
