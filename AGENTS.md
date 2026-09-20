@@ -134,6 +134,11 @@ Visual check (lint is not enough):
 - Writes are atomic (`FileView atomicWrites`), gated on the backup, and
   bounded under flapping (`start`, never `restart`); save failures back
   off and suspend after 6.
+- The settings lock never stores a plain password, and a malformed
+  record fails *open*: a record nobody can satisfy would seal the page
+  for good. Keep the work factor small — hashing runs on the GUI thread,
+  and the digest sits in a file its owner can delete, so rounds buy
+  friction, never secrecy.
 - New prefs default to current behavior and settings writes never drop
   stored keys. Downgrades may drop newer pref keys (the no-drop guard
   shipped in 1.6.0) — schema sections are never renamed for this reason.

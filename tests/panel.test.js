@@ -279,6 +279,11 @@ test("a password gates the settings page and nothing else", () => {
     /Password\.verifyPassword\(password, root\.passwordRecord\)/,
   )
   assert.match(gate, /echoMode: TextInput\.Password/)
+  // Opening a locked drawer puts the cursor in the field.
+  assert.match(
+    gate,
+    /onVisibleChanged: \{[\s\S]*?Qt\.callLater\(gate\.focusInput\)/,
+  )
   // Nothing copies the attempt back out of the field.
   assert.match(gate, /selectByMouse: false/)
 })

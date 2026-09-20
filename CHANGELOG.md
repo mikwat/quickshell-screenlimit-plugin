@@ -26,6 +26,11 @@ history, kept for reference — they describe that plugin, so their IPC target
   over, silent while the screen is locked and again at midnight. The sound
   has an off switch in settings; the notification stays.
 
+- Lock the settings behind a password: the gear asks before the limit, the
+  alarm or your history can be touched, and re-locks when the panel
+  closes. A speed bump against your own "just this once", not a vault —
+  the README says exactly how far it goes.
+
 ### Changed
 
 - The daily goal is gone: something to stay under replaces something to

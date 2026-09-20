@@ -46,6 +46,13 @@ Item {
         gate.submitted(attempt);
     }
 
+    // Opening a locked drawer puts the cursor in the field: the whole
+    // interaction is meant to be type-and-enter.
+    onVisibleChanged: {
+        if (gate.visible)
+            Qt.callLater(gate.focusInput);
+    }
+
     Timer {
         interval: 250
         repeat: true

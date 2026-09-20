@@ -29,6 +29,11 @@ something to stay under.
   limit runs out, repeated every 15 minutes for as long as you stay over,
   silent again at midnight. Locked and idle sessions stay quiet, and the
   sound has an off switch that keeps the notification.
+- Settings lock: set a password and the gear asks for it before the
+  limit, the alarm or your history can be touched. The panel itself stays
+  open — your own numbers are never hidden from you. An unlock ends when
+  the panel closes, and wrong guesses cost a pause that doubles. See
+  [What the lock is](#what-the-lock-is) before trusting it with anything.
 - Live bar widget: with no limit set it is today's running total, in your
   bar font, updated as you work. Right-click collapses it to a single
   glyph; remembered.
@@ -70,6 +75,27 @@ something to stay under.
 - Timer easter egg: turns a full circle on the hour; gold sparkles on
   hover; header icons spin as you navigate (mute it all with Playful
   extras).
+
+## What the lock is
+
+A speed bump between an impulse and a raised limit. Nothing more, and the
+README would rather say so than let you find out later:
+
+- The password is never stored. What lands in `shell.json` is a salted,
+  iterated SHA-256 digest, and the plain text never reaches a log or a
+  process argument.
+- That file is yours to edit. Deleting the `settingsPassword` key unlocks
+  the settings, which is both the recovery path when you forget it and the
+  reason this cannot stop a determined you.
+- The plugin can be disabled from the bar's own menu, and
+  `quickshell ipc call mikwat.screen-limit resetToday` still works while
+  the settings are locked. Neither route is gated.
+- The work factor is small on purpose: hashing runs on the shell's GUI
+  thread, so a heavier one would freeze your bar to buy protection that
+  the two points above already give away.
+
+It works because a few seconds of friction is usually all that stands
+between you and "just this once" — not because it is a vault.
 
 ## Keybinds & hints
 
