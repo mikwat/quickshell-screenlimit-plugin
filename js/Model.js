@@ -521,12 +521,23 @@ function isMonthKey(key) {
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(String(key || ""))
 }
 
+// A stored JSON array comes back from the QML settings as a list
+// wrapper that fails Array.isArray — a foreign-realm Array, indexable
+// and correct in every other way. Anything array-like therefore counts,
+// or a limit set today reads as off after the next shell restart.
+function asList(value) {
+  if (Array.isArray(value)) return value
+  if (value && typeof value === "object" && typeof value.length === "number")
+    return value
+  return []
+}
+
 // Limit history: [{ day: "YYYY-MM-DD", minutes }] recording every change.
 // The limit counts from the day it is set; earlier days never show it,
 // and each day keeps the limit it had (limits may differ day to day).
 function parseLimitLog(value) {
   var out = []
-  var raw = Array.isArray(value) ? value : []
+  var raw = asList(value)
   for (var i = 0; i < raw.length; i++) {
     var e = raw[i] || {}
     var day = String(e.day || "")
@@ -551,7 +562,7 @@ function limitForDay(log, key) {
   var k = String(key || "")
   var best = ""
   var minutes = 0
-  var list = Array.isArray(log) ? log : []
+  var list = asList(log)
   for (var i = 0; i < list.length; i++) {
     var e = list[i] || {}
     var day = String(e.day || "")
@@ -2001,6 +2012,7 @@ if (typeof module !== "undefined" && module && module.exports) {
     ALARM_REPEAT_MS: ALARM_REPEAT_MS,
     alarmDue: alarmDue,
     LIMIT_LOG_MAX: LIMIT_LOG_MAX,
+    asList: asList,
     parseLimitLog: parseLimitLog,
     limitForDay: limitForDay,
     logLimitChange: logLimitChange,

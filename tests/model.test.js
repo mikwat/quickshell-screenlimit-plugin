@@ -2217,6 +2217,27 @@ test("parseLimitLog keeps valid entries sorted with latest per day", () => {
   )
 })
 
+test("a stored limit log survives QML's foreign-realm array", () => {
+  // Proven live: the settings round-trip hands the log back as an
+  // Array-like object that fails Array.isArray, with every element
+  // intact. Rejecting it read the limit as off after every restart.
+  const foreign = Object.create(null)
+  foreign.length = 1
+  foreign[0] = { day: "2026-09-19", minutes: 60 }
+  assert.equal(Array.isArray(foreign), false)
+  assert.deepEqual(Model.parseLimitLog(foreign), [
+    { day: "2026-09-19", minutes: 60 },
+  ])
+  assert.equal(Model.limitForDay(foreign, "2026-09-19"), 60)
+  // Real arrays keep working, and nothing else counts as a list.
+  assert.deepEqual(Model.asList([1, 2]), [1, 2])
+  assert.deepEqual(Model.asList("nope"), [])
+  assert.deepEqual(Model.asList({ day: "2026-09-19" }), [])
+  assert.deepEqual(Model.asList(null), [])
+  assert.deepEqual(Model.asList(7), [])
+  assert.deepEqual(Model.parseLimitLog("nope"), [])
+})
+
 test("limitForDay returns the minutes in force that day", () => {
   const log = [
     { day: "2026-09-11", minutes: 60 },
