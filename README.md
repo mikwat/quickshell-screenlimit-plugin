@@ -1,6 +1,10 @@
 <p align="center">
   <img src="preview.png" alt="Screen Limit" width="100%"/>
 </p>
+<p align="center">
+  <sub>Bar, panel, settings and alarm as they render; the week and app
+  figures are sample data.</sub>
+</p>
 
 # Screen Limit
 
