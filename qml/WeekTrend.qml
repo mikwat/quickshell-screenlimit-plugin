@@ -14,14 +14,11 @@ Column {
     required property int maxOffset
     required property bool hasPrevWeekData
     required property var visibleWeek
-    required property bool recordWeek
     required property bool weekTotalAsPct
     required property double visibleWeekTotalMs
     required property var axisTicks
     required property double axisMaxMs
     required property string activeDayKey
-    required property color recordColor
-    required property bool showRecordTrophy
     required property bool hintMode
 
     signal prevWeekRequested
@@ -42,7 +39,7 @@ Column {
             id: navRow
             anchors.left: parent.left
             anchors.right: weekTotalLabel.left
-            anchors.rightMargin: recordTrophy.visible ? recordTrophy.implicitWidth + Style.space(12) : Style.space(8)
+            anchors.rightMargin: Style.space(8)
             anchors.verticalCenter: parent.verticalCenter
             height: Math.max(weekLabel.implicitHeight, Math.max(prevArrow.implicitHeight, nextArrow.implicitHeight))
 
@@ -105,37 +102,6 @@ Column {
                 show: root.hintMode && root.weekOffset > 0
                 anchors.top: nextArrow.top
                 anchors.left: nextArrow.left
-            }
-        }
-
-        // Busiest Week Trophy: gold by default, configurable and
-        // hideable via the settings.
-        Text {
-            id: recordTrophy
-            visible: root.recordWeek && root.showRecordTrophy
-            text: "\uF091"
-            color: root.recordColor
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.bodySmall
-            anchors.right: weekTotalLabel.left
-            anchors.rightMargin: Style.space(4)
-            anchors.verticalCenter: parent.verticalCenter
-
-            MouseArea {
-                id: recordTrophyMouse
-                anchors.fill: parent
-                anchors.margins: -Style.space(4)
-                hoverEnabled: true
-                cursorShape: Qt.ArrowCursor
-            }
-
-            ScreenTip {
-                foreground: root.foreground
-                fontFamily: root.fontFamily
-                tipBackground: root.tipBackground
-
-                hovered: recordTrophyMouse.containsMouse
-                tipText: "Busiest Week Trophy — your best week on record"
             }
         }
 

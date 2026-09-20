@@ -33,7 +33,6 @@ Panel {
     readonly property bool hideDailyInsights: root.prefs.hideDailyInsights === true
     readonly property bool hideYearInsights: root.prefs.hideYearInsights === true
     readonly property bool hideEasterEggs: root.prefs.hideEasterEggs === true
-    readonly property bool hideRecordTrophy: root.prefs.hideRecordTrophy === true
     // Plugin version, mirrored from manifest.json (a test fails when
     // they drift apart); shown in the settings About section.
     readonly property string pluginVersion: "1.0.0"
@@ -54,23 +53,10 @@ Panel {
             root.writeSetting("weekCount", count);
     }
 
-    // Busiest Week Trophy swatches, derived from the live theme; gold is
-    // the default so old installs keep it. A stored pick stays selected
-    // across theme switches (the menu shows it as a custom slot).
-    readonly property string recordDefaultColor: "#ffd700"
-    readonly property var recordColorOptions: Model.themeSwatches(Color.accent, Color.foreground, Color.muted)
-    readonly property string recordColor: Model.pickSwatch(root.prefs.recordColor, root.recordDefaultColor)
-
-    function selectRecordColor(color) {
-        var c = Model.normalizeHex(color, "");
-        if (c && c !== root.recordColor)
-            root.writeSetting("recordColor", c);
-    }
-
     // Hero icon color for the hourglass, the yearly hero and the settings
     // glyph. Options follow the theme; empty follows the theme
-    // foreground, so old installs keep it. Stored picks survive theme
-    // switches like the trophy color above.
+    // foreground, so old installs keep it. A stored pick stays selected
+    // across theme switches (the menu shows it as a custom slot).
     readonly property string heroDefaultColor: ""
     readonly property var heroColorOptions: Model.themeSwatches(Color.accent, Color.foreground, Color.muted)
     readonly property string heroColor: Model.pickSwatch(root.prefs.heroColor, root.heroDefaultColor)
@@ -164,9 +150,6 @@ Panel {
     readonly property var axisTicks: Model.weekAxisTicks(root.visibleWeekMax)
     readonly property double axisMaxMs: root.axisTicks.length ? root.axisTicks[root.axisTicks.length - 1] : 0
     readonly property double visibleWeekTotalMs: root.weekView ? root.weekView.totalMs : 0
-    // The Busiest Week Trophy marks the unique best week on record and
-    // follows the viewed week at any page.
-    readonly property bool recordWeek: serviceReady ? (root.weekView ? root.weekView.isRecord : false) : false
     property bool expanded: false
     property bool calendarOpen: false
     property bool configOpen: false
@@ -673,10 +656,6 @@ Panel {
                             weekOptions: root.weekOptions
                             weekTotalAsPct: root.weekTotalAsPct
                             hideEasterEggs: root.hideEasterEggs
-                            hideRecordTrophy: root.hideRecordTrophy
-                            recordColor: root.recordColor
-                            recordColorOptions: root.recordColorOptions
-                            recordDefaultColor: root.recordDefaultColor
                             heroColor: root.heroColor
                             heroColorOptions: root.heroColorOptions
                             heroDefaultColor: root.heroDefaultColor
@@ -693,9 +672,6 @@ Panel {
                             onYearInsightsToggled: root.writeSetting("hideYearInsights", !root.hideYearInsights)
                             onWeekWindowSelected: function (count) {
                                 root.selectWeekWindow(count);
-                            }
-                            onRecordColorSelected: function (color) {
-                                root.selectRecordColor(color);
                             }
                             onHeroColorSelected: function (color) {
                                 root.selectHeroColor(color);
@@ -719,7 +695,6 @@ Panel {
                             // Muting is the inverse of the sound now playing.
                             onAlarmSoundToggled: root.writeSetting("muteAlarmSound", root.alarmSound)
                             onWeekTotalModeToggled: root.writeSetting("weekTotalAsPct", !root.weekTotalAsPct)
-                            onTrophyToggled: root.writeSetting("hideRecordTrophy", !root.hideRecordTrophy)
                             onEasterEggsToggled: root.writeSetting("hideEasterEggs", !root.hideEasterEggs)
                             onResetRequested: {
                                 if (root.service)
@@ -897,14 +872,11 @@ Panel {
                                 maxOffset: root.maxWeekOffset
                                 hasPrevWeekData: root.hasPrevWeekData
                                 visibleWeek: root.visibleWeek
-                                recordWeek: root.recordWeek
-                                showRecordTrophy: !root.hideRecordTrophy
                                 weekTotalAsPct: root.weekTotalAsPct
                                 visibleWeekTotalMs: root.visibleWeekTotalMs
                                 axisTicks: root.axisTicks
                                 axisMaxMs: root.axisMaxMs
                                 activeDayKey: root.activeDayKey
-                                recordColor: root.recordColor
                                 hintMode: root.hintMode
                                 onPrevWeekRequested: root.weekOffset = Math.min(root.maxWeekOffset, root.weekOffset + 1)
                                 onNextWeekRequested: root.weekOffset = Math.max(0, root.weekOffset - 1)

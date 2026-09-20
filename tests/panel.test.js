@@ -76,9 +76,7 @@ test("config menu threads prefs with explicit props and signals", () => {
     "yearInsightsToggled",
     "weekWindowSelected",
     "weekTotalModeToggled",
-    "trophyToggled",
     "easterEggsToggled",
-    "recordColorSelected",
     "heroColorSelected",
     "resetRequested",
   ]) {
@@ -86,13 +84,8 @@ test("config menu threads prefs with explicit props and signals", () => {
   }
   assert.match(menu, /required property int weekCount/)
   assert.match(menu, /required property var weekOptions/)
-  assert.match(menu, /required property bool hideRecordTrophy/)
-  assert.match(menu, /required property string recordColor/)
-  assert.match(menu, /required property var recordColorOptions/)
   assert.match(menu, /required property string heroColor/)
   assert.match(menu, /required property var heroColorOptions/)
-  assert.match(menu, /model: root\.recordColorOptions/)
-  assert.match(menu, /root\.recordColorSelected\(modelData\)/)
   assert.match(menu, /model: root\.heroColorOptions/)
   assert.match(menu, /root\.heroColorSelected\(modelData\)/)
   assert.match(panel, /hostWidget\.setSetting/)
@@ -151,56 +144,9 @@ test("config lives in its own slide-over drawer", () => {
   )
 })
 
-test("busiest week trophy follows the best week at any page", () => {
-  assert.match(panel, /readonly property bool recordWeek/)
-  assert.match(panel, /root\.weekView \? root\.weekView\.isRecord/)
-  assert.doesNotMatch(panel, /weekOffset === 0 && serviceReady/)
-  assert.match(trend, /visible: root\.recordWeek && root\.showRecordTrophy/)
-})
-
-test("busiest week trophy hides via setting", () => {
-  assert.match(
-    panel,
-    /hideRecordTrophy: root\.prefs\.hideRecordTrophy === true/,
-  )
-  assert.match(
-    panel,
-    /writeSetting\("hideRecordTrophy", !root\.hideRecordTrophy\)/,
-  )
-  assert.match(panel, /showRecordTrophy: !root\.hideRecordTrophy/)
-  assert.match(menu, /signal trophyToggled/)
-  assert.match(menu, /shown: !root\.hideRecordTrophy/)
-  assert.match(menu, /label: "Busiest Week Trophy"/)
-  assert.match(trend, /required property bool showRecordTrophy/)
-})
-
 test("week total mode persists instead of resetting on dismiss", () => {
   assert.match(panel, /writeSetting\("weekTotalAsPct", !root\.weekTotalAsPct\)/)
   assert.doesNotMatch(panel, /root\.weekTotalAsPct = false/)
-})
-
-test("busiest week trophy color defaults to gold and persists via setting", () => {
-  assert.match(
-    panel,
-    /Model\.themeSwatches\(Color\.accent, Color\.foreground, Color\.muted\)/,
-  )
-  assert.match(
-    panel,
-    /Model\.pickSwatch\(root\.prefs\.recordColor, root\.recordDefaultColor\)/,
-  )
-  assert.match(panel, /function selectRecordColor\(color\)/)
-  assert.match(panel, /writeSetting\("recordColor", c\)/)
-  assert.match(panel, /recordColor: root\.recordColor/)
-  assert.match(trend, /required property color recordColor/)
-  assert.match(trend, /color: root\.recordColor/)
-  assert.doesNotMatch(trend, /color: "#FFD700"/)
-  // A stored pick missing from the theme set renders as a custom slot
-  // instead of resetting to gold.
-  assert.match(
-    menu,
-    /root\.recordColorOptions\.indexOf\(root\.recordColor\) === -1/,
-  )
-  assert.match(menu, /root\.recordColorSelected\(root\.recordColor\)/)
 })
 
 test("hero icon color overrides hourglass, yearly and config glyphs", () => {
@@ -456,12 +402,7 @@ test("danger buttons center vertically beside early-wrapping labels", () => {
 })
 
 test("option pills align left under their labels", () => {
-  for (const id of [
-    "weekBoxes",
-    "limitBoxes",
-    "trophySwatches",
-    "heroSwatches",
-  ]) {
+  for (const id of ["weekBoxes", "limitBoxes", "heroSwatches"]) {
     const row = menu.match(
       new RegExp(
         "id: " + id + "[\\s\\S]*?anchors\\.(left|right): parent\\.(left|right)",
@@ -473,18 +414,13 @@ test("option pills align left under their labels", () => {
 })
 
 test("color rows offer a reset glyph at the right", () => {
-  assert.match(panel, /readonly property string recordDefaultColor: "#ffd700"/)
   assert.match(panel, /readonly property string heroDefaultColor: ""/)
-  assert.match(menu, /required property string recordDefaultColor/)
   assert.match(menu, /required property string heroDefaultColor/)
-  assert.match(menu, /root\.recordColorSelected\(root\.recordDefaultColor\)/)
   assert.match(menu, /root\.heroColorSelected\(root\.heroDefaultColor\)/)
-  assert.match(menu, /root\.recordColor === root\.recordDefaultColor/)
   assert.match(menu, /root\.heroColor === root\.heroDefaultColor/)
-  assert.match(panel, /recordDefaultColor: root\.recordDefaultColor/)
   assert.match(panel, /heroDefaultColor: root\.heroDefaultColor/)
   const resets = menu.match(/text: "\\uf0e2"/g)
-  assert(resets && resets.length === 2, "reset glyph in both color rows")
+  assert(resets && resets.length === 1, "reset glyph in the color row")
   assert.doesNotMatch(menu, /text: "R"/)
   // Idle glyphs use the theme foreground at reduced opacity, never a
   // darkened shade that vanishes on dark themes.
@@ -577,10 +513,6 @@ test("week pills read in weeks", () => {
   assert.match(menu, /text: weekChip\.modelData \+ "w"/)
 })
 
-test("trophy color carries a wrapping caption", () => {
-  assert.match(menu, /text: "Color of the record-week trophy"/)
-})
-
 test("settings header icon returns to the main panel", () => {
   assert.match(
     panel,
@@ -669,17 +601,6 @@ test("settings header reads Settings with a content subtitle", () => {
   assert.match(panel, /text: "Settings"/)
   assert.match(panel, /Display, tracking, limits & data/)
   assert.doesNotMatch(panel, /text: "Screen Limit"/)
-})
-
-test("trophy needs two weeks of tracked data", () => {
-  const model = fs.readFileSync(
-    path.join(__dirname, "..", "js", "Model.js"),
-    "utf8",
-  )
-  assert.match(
-    model,
-    /isRecord: offset === bestWeekOffset\(weeks\) && dataWeeks >= 2/,
-  )
 })
 
 test("year hero opens straight into the pager without a caption", () => {
@@ -892,9 +813,6 @@ test("settings registry covers every pressable in order", () => {
   for (const kind of [
     "back",
     "toggle",
-    "trophy-swatch",
-    "trophy-custom",
-    "trophy-reset",
     "hero-swatch",
     "hero-custom",
     "hero-reset",
@@ -930,10 +848,6 @@ test("settings badges follow the registry", () => {
     /root\.hintTag\(root\.hintItems, "toggle", modelData\.kind\)/,
   )
   assert.match(menu, /root\.hintTag\(root\.hintItems, "weeks", modelData\)/)
-  assert.match(
-    menu,
-    /root\.hintTag\(root\.hintItems, "trophy-swatch", modelData\)/,
-  )
   assert.match(
     menu,
     /root\.hintTag\(root\.hintItems, "hero-swatch", modelData\)/,
@@ -1143,7 +1057,5 @@ test("week header nudges the next arrow after the range text", () => {
   assert.match(trend, /anchors\.left: prevArrow\.right/)
   assert.match(trend, /anchors\.left: weekLabel\.right/)
   assert.match(trend, /Math\.min\(implicitWidth/)
-  assert.match(trend, /id: recordTrophy/)
-  assert.match(trend, /recordTrophy\.visible \? recordTrophy\.implicitWidth/)
   assert.doesNotMatch(trend, /space\(76\)/)
 })

@@ -36,14 +36,11 @@ TestCase {
                 { "key": "2026-09-06", "ms": 0, "label": "Sun", "isEmpty": true, "isFuture": false, "isToday": false }
             ]
         }
-        recordWeek: false
         weekTotalAsPct: false
         visibleWeekTotalMs: 18000000
         axisTicks: [0, 14400000, 28800000]
         axisMaxMs: 28800000
         activeDayKey: "2026-09-04"
-        recordColor: "#FFD700"
-        showRecordTrophy: true
         hintMode: false
     }
 

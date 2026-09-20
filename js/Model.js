@@ -919,40 +919,6 @@ function weekTotal(trend) {
   return total
 }
 
-// True when the week at offset beats every older week in a monSunWeeks
-// list (strictly: ties don't take the crown, and a lone week with no
-// previous weeks has surpassed nothing).
-function isRecordWeek(weeks, offset) {
-  if (!weeks || offset < 0 || offset >= weeks.length) return false
-  if (offset + 1 >= weeks.length) return false
-  var mine = weekTotal(weeks[offset] ? weeks[offset].days : [])
-  if (mine <= 0) return false
-  for (var i = offset + 1; i < weeks.length; i++) {
-    if (weekTotal(weeks[i] ? weeks[i].days : []) >= mine) return false
-  }
-  return true
-}
-
-// Offset of the unique-best week in a monSunWeeks list (newest first),
-// or -1 when there is none: empty, all zero, or a tied top. Unlike
-// isRecordWeek (which only looks at older weeks) this compares against
-// every loaded week, so a paged-back best week still earns the crown.
-function bestWeekOffset(weeks) {
-  var list = Array.isArray(weeks) ? weeks : []
-  var best = -1
-  var bestMs = 0
-  for (var i = 0; i < list.length; i++) {
-    var ms = weekTotal(list[i] ? list[i].days : [])
-    if (ms > bestMs) {
-      bestMs = ms
-      best = i
-    } else if (ms > 0 && ms === bestMs) {
-      best = -1
-    }
-  }
-  return best
-}
-
 // Prune past keepDays (ISO keys compare lexicographically); unchanged
 // input returns by identity. Absurd windows (Infinity) prune nothing
 // instead of hanging the cutoff loop.
@@ -1359,8 +1325,8 @@ function scrollableTrendMax(weeks) {
   return max
 }
 
-// One week-trend derivation: { weeks, week, max, totalMs, isRecord,
-// hasPrev, weekEndKey }; null week when offset is out of range.
+// One week-trend derivation: { weeks, week, max, totalMs, hasPrev,
+// weekEndKey }; null week when offset is out of range.
 function weekView(days, todayKey, weekCount, offset) {
   var weeks = monSunWeeks(days, todayKey, weekCount)
   var empty = {
@@ -1368,7 +1334,6 @@ function weekView(days, todayKey, weekCount, offset) {
     week: null,
     max: 0,
     totalMs: 0,
-    isRecord: false,
     hasPrev: false,
     weekEndKey: "",
   }
@@ -1393,26 +1358,11 @@ function weekView(days, todayKey, weekCount, offset) {
     }
     if (hasPrev) break
   }
-  // Weeks holding any tracked time; the trophy needs at least two.
-  var dataWeeks = 0
-  for (i = 0; i < weeks.length; i++) {
-    var scanned = weeks[i] && weeks[i].days ? weeks[i].days : []
-    for (var s = 0; s < scanned.length; s++) {
-      if ((Number(scanned[s].ms) || 0) > 0) {
-        dataWeeks++
-        break
-      }
-    }
-  }
   return {
     weeks: weeks,
     week: week,
     max: max,
     totalMs: weekTotal(wdays),
-    // The Busiest Week Trophy follows the viewed week at any page: unique best across
-    // the whole loaded window, not just "current week beats older weeks".
-    // It needs two weeks of tracked data: a lone first week crowns nothing.
-    isRecord: offset === bestWeekOffset(weeks) && dataWeeks >= 2,
     hasPrev: hasPrev,
     weekEndKey: wdays.length === 7 ? String(wdays[6].key || "") : "",
   }
@@ -2085,8 +2035,6 @@ if (typeof module !== "undefined" && module && module.exports) {
     busiestWeekDay: busiestWeekDay,
     weekTrend: weekTrend,
     weekTotal: weekTotal,
-    isRecordWeek: isRecordWeek,
-    bestWeekOffset: bestWeekOffset,
     pruneDays: pruneDays,
     insights: insights,
     groupedApps: groupedApps,

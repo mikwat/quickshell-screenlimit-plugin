@@ -25,10 +25,6 @@ Column {
     required property var weekOptions
     required property bool weekTotalAsPct
     required property bool hideEasterEggs
-    required property bool hideRecordTrophy
-    required property string recordColor
-    required property var recordColorOptions
-    required property string recordDefaultColor
     required property string heroColor
     required property var heroColorOptions
     required property string heroDefaultColor
@@ -46,9 +42,7 @@ Column {
     signal yearInsightsToggled
     signal weekWindowSelected(int count)
     signal weekTotalModeToggled
-    signal trophyToggled
     signal easterEggsToggled
-    signal recordColorSelected(string color)
     signal heroColorSelected(string color)
     signal ignoredAdded(string name)
     signal ignoredRemoved(string name)
@@ -76,8 +70,6 @@ Column {
             root.yearInsightsToggled();
         else if (kind === "weektotal")
             root.weekTotalModeToggled();
-        else if (kind === "trophy")
-            root.trophyToggled();
         else if (kind === "easter")
             root.easterEggsToggled();
         else if (kind === "alarm")
@@ -108,14 +100,9 @@ Column {
             });
         }
         add("back", 0);
-        var toggleKinds = ["yearly", "daily", "retro", "weektotal", "trophy", "easter"];
+        var toggleKinds = ["yearly", "daily", "retro", "weektotal", "easter"];
         for (var t = 0; t < toggleKinds.length; t++)
             add("toggle", toggleKinds[t]);
-        for (var s = 0; s < root.recordColorOptions.length; s++)
-            add("trophy-swatch", root.recordColorOptions[s]);
-        if (root.recordColor && root.recordColorOptions.indexOf(root.recordColor) === -1)
-            add("trophy-custom", 0);
-        add("trophy-reset", 0);
         for (var h = 0; h < root.heroColorOptions.length; h++)
             add("hero-swatch", root.heroColorOptions[h]);
         if (root.heroColor && root.heroColorOptions.indexOf(root.heroColor) === -1)
@@ -168,12 +155,6 @@ Column {
         var sub = entry.sub;
         if (kind === "toggle")
             root.activate(sub);
-        else if (kind === "trophy-swatch")
-            root.recordColorSelected(sub);
-        else if (kind === "trophy-custom")
-            root.recordColorSelected(root.recordColor);
-        else if (kind === "trophy-reset")
-            root.recordColorSelected(root.recordDefaultColor);
         else if (kind === "hero-swatch")
             root.heroColorSelected(sub);
         else if (kind === "hero-custom")
@@ -288,12 +269,6 @@ Column {
                         shown: root.weekTotalAsPct
                     },
                     {
-                        kind: "trophy",
-                        label: "Busiest Week Trophy",
-                        sub: "Trophy for your best week on record",
-                        shown: !root.hideRecordTrophy
-                    },
-                    {
                         kind: "easter",
                         label: "Playful extras",
                         sub: "Hourglass flip, sparkles and header spins",
@@ -396,144 +371,6 @@ Column {
                 font.letterSpacing: 1.5
             }
 
-            // Busiest Week Trophy color swatches; neutrals first, gold is default.
-            Column {
-                width: parent.width
-                spacing: Style.space(6)
-
-                Column {
-                    width: parent.width
-                    spacing: Style.space(2)
-
-                    Text {
-                        text: "Busiest Week Trophy"
-                        color: root.foreground
-                        opacity: 0.75
-                        font.family: root.fontFamily
-                        font.pixelSize: Style.font.bodySmall
-                        width: parent.width
-                        elide: Text.ElideRight
-                    }
-
-                    Text {
-                        text: "Color of the record-week trophy"
-                        color: root.foreground
-                        opacity: 0.45
-                        font.family: root.fontFamily
-                        font.pixelSize: Style.font.caption
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                    }
-                }
-
-                Row {
-                    id: trophySwatches
-                    spacing: Style.space(8)
-                    anchors.left: parent.left
-
-                    Repeater {
-                        model: root.recordColorOptions
-
-                        Rectangle {
-                            required property string modelData
-                            readonly property bool chosen: modelData === root.recordColor
-                            width: Style.space(20)
-                            height: Style.space(20)
-                            radius: Style.space(10)
-                            color: modelData
-                            border.color: chosen ? root.accent : Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.25)
-                            border.width: chosen ? 3 : 1
-
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.recordColorSelected(modelData)
-                            }
-
-                            HintBadge {
-                                readonly property string tag: root.hintTag(root.hintItems, "trophy-swatch", modelData)
-                                label: tag
-                                fontFamily: root.fontFamily
-                                accent: root.accent
-                                show: root.hintMode && tag !== ""
-                                anchors.top: parent.top
-                                anchors.right: parent.right
-                            }
-                        }
-                    }
-
-                    // Stored pick absent from the theme set: a custom slot
-                    // so a theme switch never silently drops the saved
-                    // color. Zero width while hidden keeps the row tight.
-                    Rectangle {
-                        readonly property bool custom: root.recordColor && root.recordColorOptions.indexOf(root.recordColor) === -1
-                        visible: custom
-                        width: custom ? Style.space(20) : 0
-                        height: Style.space(20)
-                        radius: Style.space(10)
-                        color: root.recordColor
-                        border.color: root.accent
-                        border.width: 3
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.recordColorSelected(root.recordColor)
-                        }
-
-                        HintBadge {
-                            readonly property string tag: root.hintTag(root.hintItems, "trophy-custom", 0)
-                            label: tag
-                            fontFamily: root.fontFamily
-                            accent: root.accent
-                            show: root.hintMode && tag !== ""
-                            anchors.top: parent.top
-                            anchors.right: parent.right
-                        }
-                    }
-
-                    // Reset glyph at the right; restores the default color.
-                    Item {
-                        id: resetTrophy
-
-                        width: resetTrophyGlyph.implicitWidth
-                        height: Style.space(20)
-
-                        readonly property bool chosen: root.recordColor === root.recordDefaultColor
-
-                        Text {
-                            id: resetTrophyGlyph
-                            text: "\uf0e2"
-                            color: root.accent
-                            opacity: resetTrophy.chosen ? 1.0 : 0.6
-                            font.family: root.fontFamily
-                            font.pixelSize: Style.font.title
-                            anchors.centerIn: parent
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            anchors.margins: -Style.space(6)
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.recordColorSelected(root.recordDefaultColor)
-                        }
-
-                        HintBadge {
-                            readonly property string tag: root.hintTag(root.hintItems, "trophy-reset", 0)
-                            label: tag
-                            fontFamily: root.fontFamily
-                            accent: root.accent
-                            show: root.hintMode && tag !== ""
-                            anchors.top: parent.top
-                            anchors.right: parent.right
-                        }
-                    }
-                }
-            }
-
             // Hero icon color for the hourglass, the yearly hero and the
             // settings glyph. Concrete circles only, starting with neutrals.
             Column {
@@ -603,7 +440,8 @@ Column {
                     }
 
                     // Stored pick absent from the theme set: a custom slot
-                    // like the trophy row above.
+                    // so a theme switch never silently drops the saved
+                    // color. Zero width while hidden keeps the row tight.
                     Rectangle {
                         readonly property bool custom: root.heroColor && root.heroColorOptions.indexOf(root.heroColor) === -1
                         visible: custom

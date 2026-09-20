@@ -29,10 +29,6 @@ TestCase {
         weekOptions: [12, 24, 36, 52]
         weekTotalAsPct: false
         hideEasterEggs: false
-        hideRecordTrophy: false
-        recordColor: "#ffd700"
-        recordColorOptions: ["#ffffff", "#e45b93"]
-        recordDefaultColor: "#ffd700"
         heroColor: ""
         heroColorOptions: ["#ffffff", "#e45b93"]
         heroDefaultColor: ""
