@@ -240,6 +240,24 @@ function verifyPassword(password, value) {
   )
 }
 
+// Wrong guesses start costing time after the first couple: 2s, then 4,
+// 8, 16, capped at 30. Typing at the panel is then slow enough to be
+// pointless, without punishing a fat-fingered first try.
+function lockoutMs(failures) {
+  var n = Math.floor(Number(failures))
+  if (!isFinite(n) || n < 3) return 0
+  return Math.min(30000, Math.pow(2, n - 3) * 2000)
+}
+
+// Seconds still to wait, for the gate's caption. Counts down to 0 and
+// never goes negative, including across a backward clock jump.
+function lockoutSecondsLeft(retryAt, now) {
+  var until = Number(retryAt)
+  var stamp = Number(now)
+  if (!isFinite(until) || !isFinite(stamp) || until <= stamp) return 0
+  return Math.ceil((until - stamp) / 1000)
+}
+
 if (typeof module !== "undefined" && module && module.exports) {
   module.exports = {
     PASSWORD_ITERATIONS: PASSWORD_ITERATIONS,
@@ -250,5 +268,7 @@ if (typeof module !== "undefined" && module && module.exports) {
     parsePasswordRecord: parsePasswordRecord,
     hasPassword: hasPassword,
     verifyPassword: verifyPassword,
+    lockoutMs: lockoutMs,
+    lockoutSecondsLeft: lockoutSecondsLeft,
   }
 }

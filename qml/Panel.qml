@@ -2,6 +2,7 @@ import QtQuick
 import qs.Commons
 import qs.Ui
 import "../js/Model.js" as Model
+import "../js/Password.js" as Password
 
 import "components"
 
@@ -199,6 +200,57 @@ Panel {
     // Sound is on unless muted, so a fresh install alarms audibly.
     readonly property bool alarmSound: root.prefs.muteAlarmSound !== true
 
+    // Settings lock. A password gates the settings page only: the panel,
+    // the donut and the week chart stay open, because hiding your own
+    // numbers from you helps nobody. Unlocking lasts until the panel
+    // closes, so walking away re-locks it.
+    //
+    // This is a speed bump between an impulse and a raised limit, not a
+    // security control: the record lives in shell.json, which the same
+    // user can edit, and the plugin can be disabled from the bar.
+    readonly property var passwordRecord: Password.parsePasswordRecord(root.prefs.settingsPassword)
+    readonly property bool settingsLocked: root.passwordRecord !== null
+    property bool settingsUnlocked: false
+    readonly property bool settingsReadable: !root.settingsLocked || root.settingsUnlocked
+    // Wrong attempts survive closing the panel, or the backoff would be
+    // one Esc away from reset.
+    property int lockFailures: 0
+    property double lockRetryAt: 0
+    property string lockMessage: ""
+
+    function submitPassword(password) {
+        if (Password.verifyPassword(password, root.passwordRecord)) {
+            root.settingsUnlocked = true;
+            root.lockFailures = 0;
+            root.lockRetryAt = 0;
+            root.lockMessage = "";
+            return;
+        }
+        root.lockFailures += 1;
+        var wait = Password.lockoutMs(root.lockFailures);
+        root.lockRetryAt = wait > 0 ? Date.now() + wait : 0;
+        root.lockMessage = wait > 0 ? "Wrong password — waiting it out" : "Wrong password";
+    }
+
+    function setPassword(password) {
+        var record = Password.newPasswordRecord(password);
+        if (!record)
+            return;
+        root.writeSetting("settingsPassword", record);
+        // Setting one from inside the settings leaves this session in:
+        // locking yourself out of the page you are standing on is never
+        // what the button meant.
+        root.settingsUnlocked = true;
+    }
+
+    function clearPassword() {
+        root.writeSetting("settingsPassword", null);
+        root.settingsUnlocked = false;
+        root.lockFailures = 0;
+        root.lockRetryAt = 0;
+        root.lockMessage = "";
+    }
+
     function logLimitChange(minutes) {
         root.writeSetting("dailyLimitLog", Model.logLimitChange(root.limitLog, root.todayKey, minutes));
         root.writeSetting("dailyLimitMinutes", Model.parseDailyLimitMinutes(minutes));
@@ -226,6 +278,15 @@ Panel {
 
     function close() {
         root.controller.hide();
+    }
+
+    // Closing the panel drops the unlock: the next visit asks again.
+    onOpenedChanged: {
+        if (!root.opened) {
+            root.settingsUnlocked = false;
+            root.lockMessage = "";
+            passwordGate.clear();
+        }
     }
 
     function toggle() {
@@ -391,7 +452,7 @@ Panel {
             // Inline editors must receive keys normally: the catcher
             // runs BeforeItem and would otherwise swallow Enter, Space
             // and h/j/k/l/x out of every settings text field.
-            blocked: configMenu.editing
+            blocked: configMenu.editing || passwordGate.editing
             onMoveRequested: function (dx, dy) {
                 if (dy !== 0)
                     root.scrollBy(-dy * Style.space(24));
@@ -406,6 +467,11 @@ Panel {
                 root.switchPanel(direction);
             }
             onTextKey: function (t) {
+                // Hints are a second route to every settings control, so
+                // the lock has to close it too: no badges, no tags, and
+                // no activation while the gate is up.
+                if (root.configOpen && !root.settingsReadable)
+                    return;
                 if (t === "f" || t === "F") {
                     root.hintMode = !root.hintMode;
                     return;
@@ -645,8 +711,28 @@ Panel {
                         width: configScroll.width - Style.space(8)
                         spacing: Style.space(10)
 
+                        // The gate stands in for the whole menu, so no
+                        // control behind it can be reached or read.
+                        PasswordGate {
+                            id: passwordGate
+                            width: parent.width
+                            height: visible ? implicitHeight : 0
+                            visible: !root.settingsReadable
+                            foreground: root.contentForeground
+                            fontFamily: root.contentFontFamily
+                            accent: Color.accent
+                            urgent: Color.urgent
+                            retryAt: root.lockRetryAt
+                            message: root.lockMessage
+                            onSubmitted: function (password) {
+                                root.submitPassword(password);
+                            }
+                        }
+
                         ConfigMenu {
                             id: configMenu
+                            visible: root.settingsReadable
+                            height: visible ? implicitHeight : 0
                             foreground: root.contentForeground
                             fontFamily: root.contentFontFamily
                             accent: Color.accent
@@ -667,6 +753,7 @@ Panel {
                             dailyLimitMinutes: root.dailyLimitMinutes
                             dailyLimitOptions: root.dailyLimitOptions
                             alarmSound: root.alarmSound
+                            passwordSet: root.settingsLocked
                             storageLabel: root.storageLabel
                             pluginVersion: root.pluginVersion
                             hintMode: root.hintMode
@@ -697,6 +784,10 @@ Panel {
                             }
                             // Muting is the inverse of the sound now playing.
                             onAlarmSoundToggled: root.writeSetting("muteAlarmSound", root.alarmSound)
+                            onPasswordChosen: function (password) {
+                                root.setPassword(password);
+                            }
+                            onPasswordCleared: root.clearPassword()
                             onWeekTotalModeToggled: root.writeSetting("weekTotalAsPct", !root.weekTotalAsPct)
                             onEasterEggsToggled: root.writeSetting("hideEasterEggs", !root.hideEasterEggs)
                             onResetRequested: {

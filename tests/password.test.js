@@ -143,3 +143,30 @@ test("salts are hex and do not repeat", () => {
   }
   assert.equal(seen.size, 200)
 })
+
+test("wrong guesses start costing time after the first two", () => {
+  // A fat-fingered first try is free; a script at the keyboard is not.
+  assert.equal(Password.lockoutMs(0), 0)
+  assert.equal(Password.lockoutMs(1), 0)
+  assert.equal(Password.lockoutMs(2), 0)
+  assert.equal(Password.lockoutMs(3), 2000)
+  assert.equal(Password.lockoutMs(4), 4000)
+  assert.equal(Password.lockoutMs(5), 8000)
+  assert.equal(Password.lockoutMs(6), 16000)
+  // Capped, so a long streak never bricks the page for an hour.
+  assert.equal(Password.lockoutMs(7), 30000)
+  assert.equal(Password.lockoutMs(40), 30000)
+  assert.equal(Password.lockoutMs("junk"), 0)
+  assert.equal(Password.lockoutMs(-3), 0)
+})
+
+test("the lockout caption counts down and stops at zero", () => {
+  const now = 1_000_000
+  assert.equal(Password.lockoutSecondsLeft(now + 8000, now), 8)
+  assert.equal(Password.lockoutSecondsLeft(now + 1, now), 1)
+  assert.equal(Password.lockoutSecondsLeft(now, now), 0)
+  assert.equal(Password.lockoutSecondsLeft(now - 9000, now), 0)
+  // A clock jumped backwards must not strand the gate.
+  assert.equal(Password.lockoutSecondsLeft("junk", now), 0)
+  assert.equal(Password.lockoutSecondsLeft(now + 5000, "junk"), 0)
+})

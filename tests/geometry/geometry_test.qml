@@ -42,6 +42,7 @@ TestCase {
         dailyLimitMinutes: 120
         dailyLimitOptions: [0, 30, 60, 120, 240, 360]
         alarmSound: true
+        passwordSet: false
         storageLabel: "1 days · 2 months · 3 archived"
         pluginVersion: "1.6.0"
         hintMode: false
@@ -197,6 +198,31 @@ TestCase {
         var t = findText("Alarm sound");
         verify(t !== null, "alarm toggle label exists");
         verify(t.height > 0 && ancestorsOccupy(t), "alarm toggle row occupies");
+    }
+
+    // The lock card carries two fields and a button; a collapsed row
+    // here would leave the password unsettable.
+    function test_lockCardOccupies() {
+        var title = findText("SETTINGS LOCK");
+        verify(title !== null, "lock card exists");
+        verify(title.height > 0 && ancestorsOccupy(title), "lock card occupies");
+        var ask = findText("Ask for a password");
+        verify(ask !== null && ask.height > 0, "unset copy shows while no password is set");
+        var button = findText("LOCK");
+        verify(button !== null && button.width > 0 && button.height > 0 && ancestorsOccupy(button), "set button occupies");
+        // Nothing to remove until one is set. An invisible parent leaves
+        // the label's own height alone, so visibility is what to assert.
+        var remove = findText("REMOVE LOCK");
+        verify(remove === null || !remove.visible, "remove hides while unset");
+    }
+
+    function test_lockCardSwitchesToChange() {
+        menu.passwordSet = true;
+        var change = findText("CHANGE");
+        verify(change !== null && change.width > 0, "button reads CHANGE once set");
+        var remove = findText("REMOVE LOCK");
+        verify(remove !== null && remove.height > 0 && ancestorsOccupy(remove), "remove offered once set");
+        menu.passwordSet = false;
     }
 
     function test_entriesRender() {

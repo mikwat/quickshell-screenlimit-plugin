@@ -253,6 +253,105 @@ test("daily limit threads from prefs to bar countdown and hero bar", () => {
   assert.match(bar, /tooltipText: root\.barTooltip/)
 })
 
+test("a password gates the settings page and nothing else", () => {
+  const gate = comp("PasswordGate.qml")
+  // The record is read through the parser, so a malformed one unlocks
+  // rather than sealing the page shut.
+  assert.match(
+    panel,
+    /Password\.parsePasswordRecord\(root\.prefs\.settingsPassword\)/,
+  )
+  assert.match(
+    panel,
+    /readonly property bool settingsLocked: root\.passwordRecord !== null/,
+  )
+  assert.match(
+    panel,
+    /readonly property bool settingsReadable: !root\.settingsLocked \|\| root\.settingsUnlocked/,
+  )
+  // The gate stands in for the whole menu: no control behind it renders.
+  assert.match(panel, /PasswordGate \{[\s\S]*?visible: !root\.settingsReadable/)
+  assert.match(panel, /ConfigMenu \{[\s\S]*?visible: root\.settingsReadable/)
+  // Stats stay readable while locked — only the drawer is gated.
+  assert.doesNotMatch(panel, /panelScroll[\s\S]{0,200}settingsReadable/)
+  assert.match(
+    panel,
+    /Password\.verifyPassword\(password, root\.passwordRecord\)/,
+  )
+  assert.match(gate, /echoMode: TextInput\.Password/)
+  // Nothing copies the attempt back out of the field.
+  assert.match(gate, /selectByMouse: false/)
+})
+
+test("hint mode cannot reach through the gate", () => {
+  // Two-letter tags are a second route to every settings control, so
+  // the lock closes it before a key is even buffered.
+  assert.match(
+    panel,
+    /onTextKey: function \(t\) \{[\s\S]*?if \(root\.configOpen && !root\.settingsReadable\)\s*\n\s*return;/,
+  )
+  const menu = qml("components/ConfigMenu.qml")
+  assert.match(menu, /add\("field-lock", 0\)/)
+  assert.match(menu, /if \(root\.passwordSet\)\s*\n\s*add\("clear-lock", 0\)/)
+})
+
+test("typed characters reach the password fields, not the shortcuts", () => {
+  // Without this the panel would swallow every letter as a shortcut and
+  // the password could never be typed.
+  assert.match(panel, /blocked: configMenu\.editing \|\| passwordGate\.editing/)
+  const menu = qml("components/ConfigMenu.qml")
+  assert.match(menu, /readonly property bool editing:[^\n]*lockCard\.editing/)
+  const gate = comp("PasswordGate.qml")
+  assert.match(
+    gate,
+    /readonly property bool editing: passwordInput\.activeFocus/,
+  )
+})
+
+test("an unlock lasts until the panel closes", () => {
+  assert.match(
+    panel,
+    /onOpenedChanged: \{[\s\S]*?root\.settingsUnlocked = false;/,
+  )
+  // Failures outlive the panel, or the backoff would be one Esc away
+  // from a reset.
+  assert.doesNotMatch(
+    panel,
+    /onOpenedChanged: \{[\s\S]*?root\.lockFailures = 0;[\s\S]*?\n    \}/,
+  )
+  assert.match(panel, /Password\.lockoutMs\(root\.lockFailures\)/)
+  const gate = comp("PasswordGate.qml")
+  assert.match(gate, /Password\.lockoutSecondsLeft\(gate\.retryAt, gate\.now\)/)
+  assert.match(gate, /enabled: !gate\.waiting/)
+})
+
+test("setting a password never locks the page you are standing on", () => {
+  const card = comp("LockCard.qml")
+  // Typing it twice is what guards against a typo that would lock you
+  // out for good.
+  assert.match(card, /newInput\.text !== confirmInput\.text/)
+  assert.match(card, /card\.error = "The two entries do not match"/)
+  assert.match(card, /newInput\.text\.length === 0/)
+  assert.match(
+    panel,
+    /function setPassword\(password\)[\s\S]*?root\.settingsUnlocked = true;/,
+  )
+  assert.match(panel, /writeSetting\("settingsPassword", record\)/)
+  assert.match(
+    panel,
+    /function clearPassword\(\)[\s\S]*?writeSetting\("settingsPassword", null\)/,
+  )
+  // Both fields are masked, and neither is ever written out.
+  const masked = card.match(/echoMode: TextInput\.Password/g)
+  assert.equal(masked.length, 2, "both lock fields are masked")
+  assert.doesNotMatch(card, /console\./)
+  assert.doesNotMatch(gateSource(), /console\./)
+})
+
+function gateSource() {
+  return comp("PasswordGate.qml")
+}
+
 test("the daily limit card opens the settings page", () => {
   // The limit is what the panel is for, so its card comes before every
   // other section.
@@ -294,6 +393,7 @@ test("the alarm sound toggle threads through to the service", () => {
   assert.match(panel, /root\.prefs\.muteAlarmSound !== true/)
   assert.match(panel, /writeSetting\("muteAlarmSound", root\.alarmSound\)/)
   assert.match(menu, /required property bool alarmSound/)
+  assert.match(menu, /required property bool passwordSet/)
   assert.match(menu, /signal alarmSoundToggled/)
   assert.match(menu, /checked: root\.alarmSound/)
   assert.match(menu, /onToggled: root\.alarmSoundToggled\(\)/)

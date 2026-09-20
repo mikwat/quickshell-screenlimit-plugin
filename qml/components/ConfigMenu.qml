@@ -33,6 +33,7 @@ Column {
     required property int dailyLimitMinutes
     required property var dailyLimitOptions
     required property bool alarmSound
+    required property bool passwordSet
     required property string storageLabel
     required property string pluginVersion
     required property bool hintMode
@@ -50,6 +51,8 @@ Column {
     signal aliasRemoved(string from)
     signal dailyLimitSelected(int minutes)
     signal alarmSoundToggled
+    signal passwordChosen(string password)
+    signal passwordCleared
     signal resetRequested
     signal wipeRequested
     signal backRequested
@@ -59,7 +62,7 @@ Column {
 
     // True while any settings text field holds focus; the panel binds
     // its key catcher to this so typed keys reach the editor.
-    readonly property bool editing: ignoredInput.activeFocus || aliasFromInput.activeFocus || aliasToInput.activeFocus
+    readonly property bool editing: ignoredInput.activeFocus || aliasFromInput.activeFocus || aliasToInput.activeFocus || lockCard.editing
 
     function activate(kind) {
         if (kind === "yearly")
@@ -103,6 +106,11 @@ Column {
         for (var g = 0; g < root.dailyLimitOptions.length; g++)
             add("limit", root.dailyLimitOptions[g]);
         add("toggle", "alarm");
+        add("field-lock", 0);
+        add("field-lock-confirm", 0);
+        add("set-lock", 0);
+        if (root.passwordSet)
+            add("clear-lock", 0);
         var toggleKinds = ["yearly", "daily", "retro", "weektotal", "easter"];
         for (var t = 0; t < toggleKinds.length; t++)
             add("toggle", toggleKinds[t]);
@@ -165,6 +173,14 @@ Column {
             root.weekWindowSelected(sub);
         else if (kind === "limit")
             root.dailyLimitSelected(sub);
+        else if (kind === "field-lock")
+            lockCard.focusField();
+        else if (kind === "field-lock-confirm")
+            lockCard.focusConfirm();
+        else if (kind === "set-lock")
+            lockCard.submit();
+        else if (kind === "clear-lock")
+            root.passwordCleared();
         else if (kind === "field-ignored")
             ignoredInput.forceActiveFocus();
         else if (kind === "add-ignored") {
@@ -400,6 +416,27 @@ Column {
                 }
             }
         }
+    }
+
+    // ---- Settings lock ------------------------------------------------
+
+    LockCard {
+        id: lockCard
+        foreground: root.foreground
+        fontFamily: root.fontFamily
+        accent: root.accent
+        urgent: root.urgent
+        passwordSet: root.passwordSet
+        hintMode: root.hintMode
+        hintItems: root.hintItems
+        fieldTag: root.hintTag(root.hintItems, "field-lock", 0)
+        confirmTag: root.hintTag(root.hintItems, "field-lock-confirm", 0)
+        saveTag: root.hintTag(root.hintItems, "set-lock", 0)
+        removeTag: root.hintTag(root.hintItems, "clear-lock", 0)
+        onPasswordChosen: function (password) {
+            root.passwordChosen(password);
+        }
+        onPasswordCleared: root.passwordCleared()
     }
 
     // ---- Display ------------------------------------------------------
