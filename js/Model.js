@@ -342,10 +342,23 @@ function limitStatus(totalMs, limitMinutes) {
 // crossing, then a nag every ALARM_REPEAT_MS while the day stays over.
 var ALARM_REPEAT_MS = 15 * 60000
 
+// Escalating cadence: the gap closes as the overage grows, so ignoring
+// the alarm costs more attention the longer it goes on. Off, the flat
+// quarter-hour stands.
+function alarmIntervalMs(overMs, escalate) {
+  if (!escalate) return ALARM_REPEAT_MS
+  var over = Math.max(0, Number(overMs) || 0)
+  if (over < 30 * 60000) return ALARM_REPEAT_MS
+  if (over < 60 * 60000) return 10 * 60000
+  if (over < 120 * 60000) return 5 * 60000
+  // Floor: past two hours over, three minutes is as loud as it gets.
+  return 3 * 60000
+}
+
 // Whether the limit alarm should sound now, given the last one it
 // sounded (day + timestamp). A day that has never alarmed always may;
 // a new day starts silent again because its key no longer matches.
-function alarmDue(exceeded, dayKey, lastDay, lastAt, now) {
+function alarmDue(exceeded, dayKey, lastDay, lastAt, now, intervalMs) {
   if (!exceeded || !isDayKey(dayKey)) return false
   if (String(lastDay || "") !== dayKey) return true
   var at = Number(lastAt)
@@ -353,7 +366,9 @@ function alarmDue(exceeded, dayKey, lastDay, lastAt, now) {
   // A backward clock jump leaves a stamp in the future: re-arm instead
   // of going silent until the clock catches up to it.
   if (now < at) return true
-  return now - at >= ALARM_REPEAT_MS
+  var gap = Math.floor(Number(intervalMs))
+  if (!isFinite(gap) || gap < 1) gap = ALARM_REPEAT_MS
+  return now - at >= gap
 }
 
 // Bar countdown: whole minutes, never seconds, rounded up so the last
@@ -2010,6 +2025,7 @@ if (typeof module !== "undefined" && module && module.exports) {
     limitStatus: limitStatus,
     limitCountdown: limitCountdown,
     ALARM_REPEAT_MS: ALARM_REPEAT_MS,
+    alarmIntervalMs: alarmIntervalMs,
     alarmDue: alarmDue,
     LIMIT_LOG_MAX: LIMIT_LOG_MAX,
     asList: asList,

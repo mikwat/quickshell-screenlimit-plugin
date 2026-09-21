@@ -33,6 +33,8 @@ Column {
     required property int dailyLimitMinutes
     required property var dailyLimitOptions
     required property bool alarmSound
+    required property bool escalateAlarm
+    required property bool grayscaleOverLimit
     required property bool passwordSet
     required property string storageLabel
     required property string pluginVersion
@@ -51,6 +53,8 @@ Column {
     signal aliasRemoved(string from)
     signal dailyLimitSelected(int minutes)
     signal alarmSoundToggled
+    signal escalateAlarmToggled
+    signal grayscaleToggled
     signal passwordChosen(string password)
     signal passwordCleared
     signal resetRequested
@@ -77,6 +81,10 @@ Column {
             root.easterEggsToggled();
         else if (kind === "alarm")
             root.alarmSoundToggled();
+        else if (kind === "escalate")
+            root.escalateAlarmToggled();
+        else if (kind === "grayscale")
+            root.grayscaleToggled();
     }
 
     // Hint-mode registry: ordered { tag, kind, sub } entries covering
@@ -88,6 +96,29 @@ Column {
     // click step like a pointer click; alias removal fires whole because
     // re-adding the alias fully restores it.
     property var hintItems: []
+
+    // The limit card's switches, in render order; the hint registry
+    // walks the same list.
+    readonly property var limitToggles: [
+        {
+            kind: "alarm",
+            label: "Alarm sound",
+            sub: root.escalateAlarm ? "Play a sound with every alarm, as often as they come" : "Play a sound when the limit runs out, and every 15 minutes after",
+            shown: root.alarmSound
+        },
+        {
+            kind: "escalate",
+            label: "Escalating alarm",
+            sub: "Nag closer together the further past the limit you go: 15m, then 10, 5, 3",
+            shown: root.escalateAlarm
+        },
+        {
+            kind: "grayscale",
+            label: "Drain the color",
+            sub: "Grayscale the whole desktop while you are over; screenshots stay in color",
+            shown: root.grayscaleOverLimit
+        }
+    ]
 
     function hintTagFor(n) {
         return String.fromCharCode(97 + Math.floor(n / 26)) + String.fromCharCode(97 + (n % 26));
@@ -105,7 +136,8 @@ Column {
         add("back", 0);
         for (var g = 0; g < root.dailyLimitOptions.length; g++)
             add("limit", root.dailyLimitOptions[g]);
-        add("toggle", "alarm");
+        for (var lt = 0; lt < root.limitToggles.length; lt++)
+            add("toggle", root.limitToggles[lt].kind);
         add("field-lock", 0);
         add("field-lock-confirm", 0);
         add("set-lock", 0);
@@ -348,71 +380,78 @@ Column {
             }
 
             // Muting leaves the notification: the alarm still lands, it
-            // just stops making noise. Sized explicitly so the row's hit
-            // area cannot collapse inside this implicit-height column.
-            Item {
-                id: alarmRow
-                width: parent.width
-                height: Math.max(alarmLabels.implicitHeight, alarmSwitch.implicitHeight)
+            // just stops making noise. Each row is sized explicitly so
+            // its hit area cannot collapse inside this implicit-height
+            // column.
+            Repeater {
+                model: root.limitToggles
 
-                Column {
-                    id: alarmLabels
-                    anchors.left: parent.left
-                    anchors.right: alarmSwitch.left
-                    anchors.rightMargin: Style.space(12)
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: Style.space(2)
+                Item {
+                    id: limitToggleRow
 
-                    Text {
-                        text: "Alarm sound"
-                        color: root.foreground
-                        opacity: 0.75
-                        font.family: root.fontFamily
-                        font.pixelSize: Style.font.bodySmall
-                        width: parent.width
-                        elide: Text.ElideRight
+                    required property var modelData
+                    width: parent.width
+                    height: Math.max(limitToggleLabels.implicitHeight, limitToggleSwitch.implicitHeight)
+
+                    Column {
+                        id: limitToggleLabels
+                        anchors.left: parent.left
+                        anchors.right: limitToggleSwitch.left
+                        anchors.rightMargin: Style.space(12)
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: Style.space(2)
+
+                        Text {
+                            text: limitToggleRow.modelData.label
+                            color: root.foreground
+                            opacity: 0.75
+                            font.family: root.fontFamily
+                            font.pixelSize: Style.font.bodySmall
+                            width: parent.width
+                            elide: Text.ElideRight
+                        }
+
+                        Text {
+                            text: limitToggleRow.modelData.sub
+                            color: root.foreground
+                            opacity: 0.45
+                            font.family: root.fontFamily
+                            font.pixelSize: Style.font.caption
+                            width: parent.width
+                            wrapMode: Text.WordWrap
+                        }
                     }
 
-                    Text {
-                        text: "Play a sound when the limit runs out, and every 15 minutes after"
-                        color: root.foreground
-                        opacity: 0.45
-                        font.family: root.fontFamily
-                        font.pixelSize: Style.font.caption
-                        width: parent.width
-                        wrapMode: Text.WordWrap
+                    ToggleSwitch {
+                        id: limitToggleSwitch
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        trackHeight: 18
+                        // The row owns the click; this also drops the cursor-ring
+                        // padding so the track aligns flush with the other controls.
+                        interactive: false
+                        checked: limitToggleRow.modelData.shown
+                        foreground: root.foreground
+                        accent: root.accent
+                        onToggled: root.activate(limitToggleRow.modelData.kind)
                     }
-                }
 
-                ToggleSwitch {
-                    id: alarmSwitch
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    trackHeight: 18
-                    // The row owns the click; this also drops the cursor-ring
-                    // padding so the track aligns flush with the other controls.
-                    interactive: false
-                    checked: root.alarmSound
-                    foreground: root.foreground
-                    accent: root.accent
-                    onToggled: root.alarmSoundToggled()
-                }
+                    HintBadge {
+                        readonly property string tag: root.hintTag(root.hintItems, "toggle", limitToggleRow.modelData.kind)
+                        label: tag
+                        fontFamily: root.fontFamily
+                        accent: root.accent
+                        show: root.hintMode && tag !== ""
+                        anchors.top: limitToggleSwitch.top
+                        anchors.right: limitToggleSwitch.right
+                    }
 
-                HintBadge {
-                    readonly property string tag: root.hintTag(root.hintItems, "toggle", "alarm")
-                    label: tag
-                    fontFamily: root.fontFamily
-                    accent: root.accent
-                    show: root.hintMode && tag !== ""
-                    anchors.top: alarmSwitch.top
-                    anchors.right: alarmSwitch.right
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.alarmSoundToggled()
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.activate(limitToggleRow.modelData.kind)
+                    }
                 }
             }
         }

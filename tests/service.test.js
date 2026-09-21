@@ -196,7 +196,10 @@ test("corrupt history is set aside without depending on python", () => {
 test("the alarm lives in the service, spending the filtered day", () => {
   // One service per shell, but a bar surface per monitor: the limit is
   // pushed in so the alarm can only fire from here.
-  assert.match(service, /function setLimitPrefs\(minutes, sound\)/)
+  assert.match(
+    service,
+    /function setLimitPrefs\(minutes, sound, escalate, grayscale\)/,
+  )
   assert.match(service, /Model\.parseDailyLimitMinutes\(minutes\)/)
   assert.match(service, /property bool alarmSound: true/)
   assert.match(
@@ -223,7 +226,7 @@ test("the alarm stays quiet while paused and between nags", () => {
   // The cadence decision is Model's, and firing records what it fired.
   assert.match(
     service,
-    /Model\.alarmDue\(true, root\.todayKey, root\.alarmDay, root\.alarmAt, now\)/,
+    /Model\.alarmDue\(true, root\.todayKey, root\.alarmDay, root\.alarmAt, now, gap\)/,
   )
   assert.match(
     service,
@@ -254,4 +257,58 @@ test("the alarm notifies first and never fails loudly", () => {
   assert.match(service, /\[ \\"\$3\\" = 1 \] \|\| exit 0/)
   // Missing tools are not an error worth logging every fifteen minutes.
   assert.match(service, /exit 0"$/m)
+})
+
+test("the escalating nag reaches the alarm through the model", () => {
+  assert.match(service, /property bool escalateAlarm: false/)
+  assert.match(
+    service,
+    /Model\.alarmIntervalMs\(status\.overMs, root\.escalateAlarm\)/,
+  )
+  assert.match(
+    service,
+    /Model\.alarmDue\(true, root\.todayKey, root\.alarmDay, root\.alarmAt, now, gap\)/,
+  )
+})
+
+test("the screen shader never stomps a shader it does not own", () => {
+  // decoration:screen_shader is shared with themes and the user, so the
+  // script writes only into an empty slot and clears only its own path.
+  assert.match(service, /property bool grayscaleOverLimit: false/)
+  assert.match(service, /\[ \\"\$cur\\" = \\"\$ours\\" \] && exit 0/)
+  assert.match(service, /\[ -n \\"\$cur\\" \] && exit 0/)
+  assert.match(service, /\[ \\"\$cur\\" = \\"\$ours\\" \] \|\| exit 0/)
+  // Hyprland's Lua parser refuses `hyprctl keyword`, so the option is
+  // written through eval instead.
+  assert.match(
+    service,
+    /exec hyprctl eval [\s\S]*?hl\.config\(\{ decoration = \{ screen_shader/,
+  )
+  assert.doesNotMatch(service, /exec hyprctl keyword/)
+  // A quoted path would break out of the Lua string, so it is refused.
+  assert.match(service, /shaderUsable: root\.shaderPath\.indexOf\("'"\) === -1/)
+  assert.match(service, /if \(!root\.ready \|\| !root\.shaderUsable\)/)
+})
+
+test("a gray desktop always comes back", () => {
+  // Only on while the day is actually over its limit.
+  assert.match(
+    service,
+    /shaderWanted: root\.grayscaleOverLimit && root\.limitStatus !== null && root\.limitStatus\.exceeded === true/,
+  )
+  // A shell that died gray clears the stale shader on the next start.
+  assert.match(
+    service,
+    /onReadyChanged: \{[\s\S]*?shaderReconciled = true;[\s\S]*?syncScreenShader\(true\)/,
+  )
+  // And a clean exit puts the color back on the way out.
+  assert.match(
+    service,
+    /Component\.onDestruction: \{[\s\S]*?execDetached\(\[[\s\S]*?"off"/,
+  )
+  // Steady state costs nothing: no process while wanted matches applied.
+  assert.match(
+    service,
+    /if \(!force && root\.shaderWanted === root\.shaderApplied\)\s*\n\s*return;/,
+  )
 })

@@ -1769,6 +1769,44 @@ test("alarmDue fires on the crossing, then nags on a cadence", () => {
   assert.equal(Model.alarmDue(true, "junk", "", 0, noon), false)
 })
 
+test("the nag closes in as the overage grows", () => {
+  const MIN = 60000
+  // Off, the cadence never moves.
+  for (const over of [0, 45 * MIN, 5 * 60 * MIN]) {
+    assert.equal(Model.alarmIntervalMs(over, false), Model.ALARM_REPEAT_MS)
+  }
+  assert.equal(Model.alarmIntervalMs(0, true), 15 * MIN)
+  assert.equal(Model.alarmIntervalMs(29 * MIN, true), 15 * MIN)
+  assert.equal(Model.alarmIntervalMs(30 * MIN, true), 10 * MIN)
+  assert.equal(Model.alarmIntervalMs(59 * MIN, true), 10 * MIN)
+  assert.equal(Model.alarmIntervalMs(60 * MIN, true), 5 * MIN)
+  assert.equal(Model.alarmIntervalMs(119 * MIN, true), 5 * MIN)
+  // Floored, so a forgotten limit never turns into a siren.
+  assert.equal(Model.alarmIntervalMs(120 * MIN, true), 3 * MIN)
+  assert.equal(Model.alarmIntervalMs(50 * 60 * MIN, true), 3 * MIN)
+  // Corrupt overages fall back to the gentlest gap.
+  assert.equal(Model.alarmIntervalMs("junk", true), 15 * MIN)
+  assert.equal(Model.alarmIntervalMs(-90 * MIN, true), 15 * MIN)
+})
+
+test("alarmDue honours the interval it is handed", () => {
+  const day = "2026-09-21"
+  const noon = Date.parse("2026-09-21T12:00:00Z")
+  // Five minutes in: due on a 5m cadence, quiet on the default 15m.
+  assert.equal(Model.alarmDue(true, day, day, noon, noon + 5 * 60000), false)
+  assert.equal(
+    Model.alarmDue(true, day, day, noon, noon + 5 * 60000, 5 * 60000),
+    true,
+  )
+  // A junk interval falls back to the flat cadence rather than firing
+  // on every tick.
+  assert.equal(
+    Model.alarmDue(true, day, day, noon, noon + 60000, "junk"),
+    false,
+  )
+  assert.equal(Model.alarmDue(true, day, day, noon, noon + 60000, 0), false)
+})
+
 test("the alarm cadence is fifteen minutes", () => {
   assert.equal(Model.ALARM_REPEAT_MS, 15 * 60000)
 })

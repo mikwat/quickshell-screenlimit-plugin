@@ -378,7 +378,40 @@ test("the daily limit card opens the settings page", () => {
   )
   assert.match(
     registry,
-    /add\("back", 0\);[\s\S]*?add\("limit"[\s\S]*?add\("toggle", "alarm"\);[\s\S]*?toggleKinds/,
+    /add\("back", 0\);[\s\S]*?add\("limit"[\s\S]*?root\.limitToggles\[lt\]\.kind[\s\S]*?toggleKinds/,
+  )
+})
+
+test("the enforcement toggles are opt-in and reach the service", () => {
+  // Neither changes a desktop that never asked, so both default off.
+  assert.match(bar, /settingBool\("escalateAlarm", false\)/)
+  assert.match(bar, /settingBool\("grayscaleOverLimit", false\)/)
+  assert.match(panel, /root\.prefs\.escalateAlarm === true/)
+  assert.match(panel, /root\.prefs\.grayscaleOverLimit === true/)
+  assert.match(
+    bar,
+    /setLimitPrefs\(root\.dailyLimitMinutes, root\.alarmSound, root\.escalateAlarm, root\.grayscaleOverLimit\)/,
+  )
+  assert.match(bar, /onEscalateAlarmChanged: root\.pushLimitPrefs\(\)/)
+  assert.match(bar, /onGrayscaleOverLimitChanged: root\.pushLimitPrefs\(\)/)
+  assert.match(panel, /writeSetting\("escalateAlarm", !root\.escalateAlarm\)/)
+  assert.match(
+    panel,
+    /writeSetting\("grayscaleOverLimit", !root\.grayscaleOverLimit\)/,
+  )
+  const menu = qml("components/ConfigMenu.qml")
+  assert.match(menu, /required property bool escalateAlarm/)
+  assert.match(menu, /required property bool grayscaleOverLimit/)
+  assert.match(menu, /signal escalateAlarmToggled/)
+  assert.match(menu, /signal grayscaleToggled/)
+  // One model drives the three rows and the hint registry alike.
+  assert.match(
+    menu,
+    /readonly property var limitToggles: \[[\s\S]*?kind: "alarm"[\s\S]*?kind: "escalate"[\s\S]*?kind: "grayscale"/,
+  )
+  assert.match(
+    menu,
+    /for \(var lt = 0; lt < root\.limitToggles\.length; lt\+\+\)\s*\n\s*add\("toggle", root\.limitToggles\[lt\]\.kind\)/,
   )
 })
 
@@ -388,7 +421,7 @@ test("the alarm sound toggle threads through to the service", () => {
   assert.match(bar, /function pushLimitPrefs\(\)/)
   assert.match(
     bar,
-    /root\.service\.setLimitPrefs\(root\.dailyLimitMinutes, root\.alarmSound\)/,
+    /root\.service\.setLimitPrefs\(root\.dailyLimitMinutes, root\.alarmSound, root\.escalateAlarm, root\.grayscaleOverLimit\)/,
   )
   assert.match(bar, /onDailyLimitMinutesChanged: root\.pushLimitPrefs\(\)/)
   assert.match(bar, /onAlarmSoundChanged: root\.pushLimitPrefs\(\)/)
@@ -400,13 +433,17 @@ test("the alarm sound toggle threads through to the service", () => {
   assert.match(menu, /required property bool alarmSound/)
   assert.match(menu, /required property bool passwordSet/)
   assert.match(menu, /signal alarmSoundToggled/)
-  assert.match(menu, /checked: root\.alarmSound/)
-  assert.match(menu, /onToggled: root\.alarmSoundToggled\(\)/)
-  assert.match(menu, /text: "Alarm sound"/)
+  // The three limit switches are one data-driven row now.
+  assert.match(menu, /kind: "alarm",[\s\S]*?shown: root\.alarmSound/)
+  assert.match(
+    menu,
+    /onToggled: root\.activate\(limitToggleRow\.modelData\.kind\)/,
+  )
+  assert.match(menu, /label: "Alarm sound"/)
   // The row cannot collapse: it sizes itself, the fill comes after.
   assert.match(
     menu,
-    /id: alarmRow[\s\S]*?height: Math\.max\(alarmLabels\.implicitHeight, alarmSwitch\.implicitHeight\)/,
+    /id: limitToggleRow[\s\S]*?height: Math\.max\(limitToggleLabels\.implicitHeight, limitToggleSwitch\.implicitHeight\)/,
   )
 })
 

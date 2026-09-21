@@ -116,13 +116,19 @@ Item {
     // Pushed values, not bindings — the service has no settings handle.
     property int dailyLimitMinutes: 0
     property bool alarmSound: true
-    function setLimitPrefs(minutes, sound) {
+    property bool escalateAlarm: false
+    property bool grayscaleOverLimit: false
+    function setLimitPrefs(minutes, sound, escalate, grayscale) {
         var m = Model.parseDailyLimitMinutes(minutes);
         var s = sound !== false;
-        if (m === root.dailyLimitMinutes && s === root.alarmSound)
+        var e = escalate === true;
+        var g = grayscale === true;
+        if (m === root.dailyLimitMinutes && s === root.alarmSound && e === root.escalateAlarm && g === root.grayscaleOverLimit)
             return;
         root.dailyLimitMinutes = m;
         root.alarmSound = s;
+        root.escalateAlarm = e;
+        root.grayscaleOverLimit = g;
     }
 
     // Spent against the filtered day, exactly like the bar countdown, so
@@ -152,7 +158,8 @@ Item {
         if (!status || !status.exceeded)
             return;
         var now = Date.now();
-        if (!Model.alarmDue(true, root.todayKey, root.alarmDay, root.alarmAt, now))
+        var gap = Model.alarmIntervalMs(status.overMs, root.escalateAlarm);
+        if (!Model.alarmDue(true, root.todayKey, root.alarmDay, root.alarmAt, now, gap))
             return;
         root.alarmDay = root.todayKey;
         root.alarmAt = now;
@@ -170,6 +177,58 @@ Item {
     // alarms. Every branch exits 0 — a missing tool is not an error
     // worth logging every fifteen minutes.
     readonly property string alarmScript: "command -v notify-send >/dev/null 2>&1 && notify-send -u critical -a 'Screen Limit' \"$1\" \"$2\"; " + "[ \"$3\" = 1 ] || exit 0; " + "command -v canberra-gtk-play >/dev/null 2>&1 && exec canberra-gtk-play -i alarm-clock-elapsed; " + "s=/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga; [ -f \"$s\" ] || exit 0; " + "command -v paplay >/dev/null 2>&1 && exec paplay \"$s\"; " + "command -v pw-play >/dev/null 2>&1 && exec pw-play \"$s\"; exit 0"
+
+    // ---- Screen shader -----------------------------------------------------
+    // Grayscale the desktop while the day is over its limit. Hyprland's
+    // Lua parser refuses `hyprctl keyword`, so the option is set through
+    // `hyprctl eval` instead.
+    //
+    // The option is shared with themes and the user, so this only ever
+    // writes it when it is empty or already ours, and only ever clears
+    // its own path. A quoted path would break out of the Lua string, so
+    // one is refused rather than escaped.
+    readonly property string shaderPath: {
+        var u = Qt.resolvedUrl("../shaders/grayscale.frag").toString();
+        return u.startsWith("file://") ? u.slice(7) : u;
+    }
+    readonly property bool shaderUsable: root.shaderPath.indexOf("'") === -1
+    readonly property bool shaderWanted: root.grayscaleOverLimit && root.limitStatus !== null && root.limitStatus.exceeded === true
+    // What we last asked Hyprland for, so a steady state costs nothing.
+    property bool shaderApplied: false
+    property bool shaderPending: false
+    property bool shaderReconciled: false
+
+    function syncScreenShader(force) {
+        if (!root.ready || !root.shaderUsable)
+            return;
+        if (shaderProc.running)
+            return;
+        if (!force && root.shaderWanted === root.shaderApplied)
+            return;
+        root.shaderPending = root.shaderWanted;
+        shaderProc.command = ["bash", "-c", root.shaderScript, "screen-limit-shader", root.shaderWanted ? "on" : "off", root.shaderPath];
+        shaderProc.running = true;
+    }
+
+    onShaderWantedChanged: root.syncScreenShader(false)
+
+    // A shell that died while the desktop was gray leaves it gray, so
+    // the first tick of a new one clears a stale shader of ours.
+    onReadyChanged: {
+        if (root.ready && !root.shaderReconciled) {
+            root.shaderReconciled = true;
+            root.syncScreenShader(true);
+        }
+    }
+
+    // Best effort on the way out; the startup reconcile above is what
+    // actually guarantees the desktop comes back.
+    Component.onDestruction: {
+        if (root.shaderApplied && root.shaderUsable)
+            Quickshell.execDetached(["bash", "-c", root.shaderScript, "screen-limit-shader", "off", root.shaderPath]);
+    }
+
+    readonly property string shaderScript: "want=\"$1\"; ours=\"$2\"; " + "cur=$(hyprctl getoption decoration:screen_shader 2>/dev/null | sed -n 's/^str: //p'); " + "[ \"$cur\" = \"[[EMPTY]]\" ] && cur=\"\"; " + "if [ \"$want\" = on ]; then " + "[ \"$cur\" = \"$ours\" ] && exit 0; " + "[ -n \"$cur\" ] && exit 0; " + "exec hyprctl eval \"hl.config({ decoration = { screen_shader = '$ours' } })\" >/dev/null 2>&1; " + "fi; " + "[ \"$cur\" = \"$ours\" ] || exit 0; " + "exec hyprctl eval \"hl.config({ decoration = { screen_shader = '' } })\" >/dev/null 2>&1"
 
     // ---- State transition helpers ------------------------------------------
     // Spread a State.js patch onto live props so bindings fire.
@@ -530,6 +589,17 @@ Item {
     Process {
         id: alarmProc
         environment: root.procEnv
+    }
+
+    // Screen shader apply/clear; command is rebuilt per sync.
+    Process {
+        id: shaderProc
+        environment: root.procEnv
+        onExited: {
+            root.shaderApplied = root.shaderPending;
+            // The wanted state may have moved while this ran.
+            root.syncScreenShader(false);
+        }
     }
 
     // Polls for missed focus events; real switches are event-driven.

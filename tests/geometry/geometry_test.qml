@@ -42,6 +42,8 @@ TestCase {
         dailyLimitMinutes: 120
         dailyLimitOptions: [0, 30, 60, 120, 240, 360]
         alarmSound: true
+        escalateAlarm: false
+        grayscaleOverLimit: true
         passwordSet: false
         storageLabel: "1 days · 2 months · 3 archived"
         pluginVersion: "1.6.0"
@@ -194,10 +196,13 @@ TestCase {
         }
     }
 
-    function test_alarmToggleOccupies() {
-        var t = findText("Alarm sound");
-        verify(t !== null, "alarm toggle label exists");
-        verify(t.height > 0 && ancestorsOccupy(t), "alarm toggle row occupies");
+    function test_limitTogglesOccupy() {
+        var labels = ["Alarm sound", "Escalating alarm", "Drain the color"];
+        for (var i = 0; i < labels.length; i++) {
+            var t = findText(labels[i]);
+            verify(t !== null, labels[i] + " row exists");
+            verify(t.height > 0 && ancestorsOccupy(t), labels[i] + " row occupies");
+        }
     }
 
     // The lock card carries two fields and a button; a collapsed row

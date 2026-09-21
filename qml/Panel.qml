@@ -197,8 +197,12 @@ Panel {
     readonly property var limitLog: Model.parseLimitLog(root.prefs.dailyLimitLog)
     readonly property var limitStatus: Model.limitStatus(root.dayTotal, Model.limitForDay(root.limitLog, root.activeDayKey))
 
-    // Sound is on unless muted, so a fresh install alarms audibly.
+    // Sound is on unless muted, so a fresh install alarms audibly. The
+    // two enforcement extras are opt-in: neither changes a desktop that
+    // never asked for it.
     readonly property bool alarmSound: root.prefs.muteAlarmSound !== true
+    readonly property bool escalateAlarm: root.prefs.escalateAlarm === true
+    readonly property bool grayscaleOverLimit: root.prefs.grayscaleOverLimit === true
 
     // Settings lock. A password gates the settings page only: the panel,
     // the donut and the week chart stay open, because hiding your own
@@ -753,6 +757,8 @@ Panel {
                             dailyLimitMinutes: root.dailyLimitMinutes
                             dailyLimitOptions: root.dailyLimitOptions
                             alarmSound: root.alarmSound
+                            escalateAlarm: root.escalateAlarm
+                            grayscaleOverLimit: root.grayscaleOverLimit
                             passwordSet: root.settingsLocked
                             storageLabel: root.storageLabel
                             pluginVersion: root.pluginVersion
@@ -784,6 +790,8 @@ Panel {
                             }
                             // Muting is the inverse of the sound now playing.
                             onAlarmSoundToggled: root.writeSetting("muteAlarmSound", root.alarmSound)
+                            onEscalateAlarmToggled: root.writeSetting("escalateAlarm", !root.escalateAlarm)
+                            onGrayscaleToggled: root.writeSetting("grayscaleOverLimit", !root.grayscaleOverLimit)
                             onPasswordChosen: function (password) {
                                 root.setPassword(password);
                             }
