@@ -135,6 +135,12 @@ Visual check (lint is not enough):
 - Writes are atomic (`FileView atomicWrites`), gated on the backup, and
   bounded under flapping (`start`, never `restart`); save failures back
   off and suspend after 6.
+- A screen shader must be ESSL 3.00 (`#version 300 es`, `in`/`out`,
+  `texture()`). Hyprland's vertex stage is 300 es and GLES will not link
+  mismatched stages: a 1.00 fragment shader compiles, fails to link, and
+  reports only on Hyprland's own error bar — `hyprctl eval` still
+  answers `ok`, and nothing reaches the journal. Check the bar, or
+  measure saturation off a `grim` capture.
 - `decoration:screen_shader` is shared with themes and the user: write
   it only when it is empty, clear it only when it is ours, and reconcile
   a stale one at startup. Hyprland's Lua parser refuses `hyprctl

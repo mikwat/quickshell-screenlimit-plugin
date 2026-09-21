@@ -312,3 +312,27 @@ test("a gray desktop always comes back", () => {
     /if \(!force && root\.shaderWanted === root\.shaderApplied\)\s*\n\s*return;/,
   )
 })
+
+test("the screen shader speaks the version Hyprland links against", () => {
+  // Hyprland's vertex stage is #version 300 es, and GLES refuses to link
+  // a program whose stages disagree: an ESSL 1.00 fragment shader
+  // (varying / gl_FragColor) compiles fine, then fails with "all shaders
+  // must use same shading language version" and paints nothing. Caught
+  // on a real desktop, pinned here.
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "shaders", "grayscale.frag"),
+    "utf8",
+  )
+  // The comment explains the ESSL 1.00 trap by name, so assert against
+  // the code alone.
+  const shader = source.replace(/^\s*\/\/.*$/gm, "")
+  assert.match(source, /^#version 300 es\n/)
+  assert.match(shader, /\bin vec2 v_texcoord;/)
+  assert.match(shader, /\bout vec4 \w+;/)
+  assert.match(shader, /\btexture\(tex, v_texcoord\)/)
+  assert.doesNotMatch(shader, /\bvarying\b/)
+  assert.doesNotMatch(shader, /\bgl_FragColor\b/)
+  assert.doesNotMatch(shader, /\btexture2D\(/)
+  // The service points at this exact file.
+  assert.match(service, /Qt\.resolvedUrl\("\.\.\/shaders\/grayscale\.frag"\)/)
+})
