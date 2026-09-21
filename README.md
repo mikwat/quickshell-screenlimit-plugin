@@ -29,6 +29,17 @@ something to stay under.
   limit runs out, repeated every 15 minutes for as long as you stay over,
   silent again at midnight. Locked and idle sessions stay quiet, and the
   sound has an off switch that keeps the notification.
+- Two opt-in ways to make an ignored limit harder to ignore, both in
+  Settings under the limit itself:
+  - **Escalating alarm** — the quarter-hour nag tightens to 10, 5 and
+    then 3 minutes as the hours over add up, and stops there.
+  - **Drain the color** — the desktop goes grayscale while you are over,
+    through Hyprland's `screen_shader`. It paints at composite time, so
+    screenshots and screen shares keep their color; only the glass in
+    front of you goes gray. It never touches the option if a theme
+    already set one, and clears only its own. If a shell ever dies while
+    the screen is gray, the next one clears it — or you can:
+    `hyprctl eval "hl.config({ decoration = { screen_shader = '' } })"`.
 - Settings lock: set a password and the gear asks for it before the
   limit, the alarm or your history can be touched. The panel itself stays
   open — your own numbers are never hidden from you. An unlock ends when

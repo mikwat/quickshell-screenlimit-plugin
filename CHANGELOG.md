@@ -26,6 +26,9 @@ history, kept for reference — they describe that plugin, so their IPC target
   over, silent while the screen is locked and again at midnight. The sound
   has an off switch in settings; the notification stays.
 
+- Two ways to make an ignored limit harder to ignore, both off until you
+  ask: an alarm that nags closer together the further over you go, and a
+  desktop that drains to grayscale while you are past the limit.
 - Lock the settings behind a password: the gear asks before the limit, the
   alarm or your history can be touched, and re-locks when the panel
   closes. A speed bump against your own "just this once", not a vault —

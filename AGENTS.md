@@ -40,6 +40,7 @@ rebaseable.
 ├── python/                 # Terminal/Steam foreground resolver
 │   └── resolve_app.py
 ├── tests/                  # model, state, service, panel, password (node) + resolver (unittest)
+├── shaders/                # Hyprland screen shaders (grayscale over limit)
 ├── lint/                   # qmllint import stubs (see lint/README.md)
 ├── docs/assets/            # Historical changelog images
 └── manifest.json           # Plugin id, version, entry points
@@ -134,6 +135,10 @@ Visual check (lint is not enough):
 - Writes are atomic (`FileView atomicWrites`), gated on the backup, and
   bounded under flapping (`start`, never `restart`); save failures back
   off and suspend after 6.
+- `decoration:screen_shader` is shared with themes and the user: write
+  it only when it is empty, clear it only when it is ours, and reconcile
+  a stale one at startup. Hyprland's Lua parser refuses `hyprctl
+  keyword` — set it through `hyprctl eval "hl.config({...})"`.
 - The settings lock never stores a plain password, and a malformed
   record fails *open*: a record nobody can satisfy would seal the page
   for good. Keep the work factor small — hashing runs on the GUI thread,
